@@ -1,18 +1,13 @@
+import { ChevronRightIcon } from '@heroicons/react/24/solid';
 import { motion } from 'framer-motion';
-import {
-  AcademicCapIcon,
-  BeakerIcon,
-  ClockIcon,
-  UserGroupIcon,
-} from '@heroicons/react/24/outline';
+import React from 'react';
 import StagesSlideshow from './StagesSlideshow';
 import YouTubeEmbed from './YouTubeEmbed';
-import { ChevronRightIcon } from '@heroicons/react/24/outline';
 
 interface Feature {
   title: string;
   description: string;
-  icon?: any;
+  icon: any;
 }
 
 interface Phase {
@@ -25,15 +20,8 @@ interface ProgramDetailCardProps {
   title: string;
   subtitle: string;
   description: string;
-  features: Array<{
-    title: string;
-    description: string;
-    icon: any;
-  }>;
-  phases?: Array<{
-    title: string;
-    description: string;
-  }>;
+  features: Feature[];
+  phases?: Phase[];
   benefits: string[];
   schedule?: {
     title: string;
