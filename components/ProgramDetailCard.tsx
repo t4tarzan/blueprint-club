@@ -25,8 +25,15 @@ interface ProgramDetailCardProps {
   title: string;
   subtitle: string;
   description: string;
-  features: Feature[];
-  phases?: Phase[];
+  features: Array<{
+    title: string;
+    description: string;
+    icon: any;
+  }>;
+  phases?: Array<{
+    title: string;
+    description: string;
+  }>;
   benefits: string[];
   schedule?: {
     title: string;
