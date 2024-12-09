@@ -15,12 +15,40 @@ import Navbar from '../../components/Navbar';
 import Hero from '../../components/Hero';
 import ProgramDetailCard from '../../components/ProgramDetailCard';
 
-const programData = {
+type ProgramVariant = 'adults' | 'schooling' | 'afterschool' | 'music';
+
+interface Program {
+  variant: ProgramVariant;
+  title: string;
+  subtitle: string;
+  description: string;
+  heroImage: string;
+  features: Array<{
+    title: string;
+    description: string;
+    icon: any;
+  }>;
+  phases?: Array<{
+    title: string;
+    description: string;
+    image?: string;
+  }>;
+  benefits: string[];
+  schedule?: {
+    title: string;
+    times: string[];
+  };
+  youtubeVideoId?: string;
+  overviewImage?: string;
+}
+
+const programData: Record<string, Program> = {
   'bpc-adults': {
     variant: 'adults',
     title: 'Blueprint Club for Adults (BPC Adults)',
     subtitle: 'Foster expertise-driven innovation and micro-niche development',
     description: 'A comprehensive program designed for seasoned professionals and aspiring youth to build personal brands, develop expertise, and create sustainable knowledge-based products while fostering cross-generational collaboration.',
+    heroImage: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=2850&q=80',
     features: [
       {
         title: 'Micro-Niche Development',
@@ -49,195 +77,157 @@ const programData = {
         description: 'Identify micro-niches and establish communication channels for maximum impact.',
       },
       {
-        title: 'Community Engagement',
-        description: 'Build tailored engagement strategies through webinars and live sessions.',
+        title: 'Content Development',
+        description: 'Create high-quality content and establish your expertise.',
       },
       {
-        title: 'Domain Expertise Development',
-        description: 'Access resources for content creation, social media growth, and professional certifications.',
+        title: 'Community Building',
+        description: 'Build and engage with your target audience.',
       },
       {
-        title: 'Micro-Niche Growth',
-        description: 'Expand reach through targeted marketing campaigns and data-driven analytics.',
-      },
-      {
-        title: 'AI Integration',
-        description: 'Implement automated processes and AI dashboards for optimization.',
-      },
-      {
-        title: 'Feedback and Evolution',
-        description: 'Regular updates based on community feedback and engagement metrics.',
+        title: 'Product Development',
+        description: 'Create and launch your knowledge-based products.',
       },
     ],
     benefits: [
-      'Build and monetize your personal brand',
-      'Access high-value tools and platforms',
-      'Network with industry experts',
-      'Create sustainable knowledge products',
-      'Mentor the next generation',
-      'Contribute to the knowledge economy',
+      'Personal Brand Development',
+      'Industry Recognition',
+      'Monetization Opportunities',
+      'Professional Network',
+      'Continuous Learning'
     ],
-    heroImage: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=2940&auto=format&fit=crop',
+    schedule: {
+      title: 'Flexible Schedule',
+      times: [
+        'Weekday Evening Sessions: 6:00 PM - 9:00 PM',
+        'Weekend Workshops: 10:00 AM - 4:00 PM',
+        'Online Learning: 24/7 Access'
+      ]
+    }
   },
   'bpc-schooling': {
     variant: 'schooling',
     title: 'BPC Schooling Club',
     subtitle: 'Transform traditional education with technology and creativity',
     description: 'An innovative schooling program that combines traditional academics with modern technology and creative disciplines, preparing students for comprehensive success in the digital age.',
+    heroImage: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=2940&q=80',
     features: [
       {
-        title: 'Integrated Curriculum',
-        description: 'Blend NCERT, IB, and Cambridge standards with modern skills development.',
+        title: 'Integrated Learning',
+        description: 'Combine traditional subjects with modern skills and technologies.',
         icon: AcademicCapIcon,
       },
       {
-        title: 'Real-World Labs',
-        description: 'Access specialized labs for hands-on learning in sciences, robotics, and digital media.',
+        title: 'Project-Based Approach',
+        description: 'Learn through hands-on projects and real-world applications.',
         icon: CubeIcon,
       },
       {
-        title: 'Holistic Development',
-        description: 'Combine academics with arts, technology, and leadership training.',
-        icon: ChatBubbleLeftIcon,
+        title: 'Technology Integration',
+        description: 'Use cutting-edge tools and platforms in everyday learning.',
+        icon: CommandLineIcon,
       },
       {
-        title: 'Personalized Learning',
-        description: 'Receive individualized mentorship and goal-setting guidance.',
+        title: 'Personalized Growth',
+        description: 'Follow individual learning paths based on interests and goals.',
         icon: UserGroupIcon,
       },
     ],
     phases: [
       {
-        title: 'Solar Spark',
-        description: 'Goal-setting and time management.',
-        image: '/BPC Schooling Overview Images/Solar Spark.png',
+        title: 'Foundation Building',
+        description: 'Master core academic concepts and basic digital skills.',
       },
       {
-        title: 'Mercurial Mastery',
-        description: 'Academic balance and interdisciplinary growth.',
-        image: '/BPC Schooling Overview Images/Mercurial Mastery.png',
+        title: 'Skill Development',
+        description: 'Develop specialized skills in chosen areas.',
       },
       {
-        title: 'Venusian Harmony',
-        description: 'Creativity and scientific thinking through coding, programmable chemistry, and art.',
-        image: '/BPC Schooling Overview Images/Venusian Harmony.png',
+        title: 'Project Implementation',
+        description: 'Apply knowledge through practical projects.',
       },
       {
-        title: 'Global Groundbreakers',
-        description: 'Real-world problem-solving with IT and industry mentors.',
-        image: '/BPC Schooling Overview Images/Global Groundbreakers.png',
+        title: 'Advanced Integration',
+        description: 'Combine multiple disciplines in complex projects.',
       },
-      {
-        title: 'Martian Innovators',
-        description: 'Advanced robotics, IoT, and AI projects.',
-        image: '/BPC Schooling Overview Images/Martian Innovation.png',
-      },
-      {
-        title: "Jupiter's Guides",
-        description: 'Career clarity through industry mentorship and practical exposure.',
-        image: "/BPC Schooling Overview Images/Jupiter's Guides.png",
-      },
-      {
-        title: 'Saturnine Scholars',
-        description: 'Academic strengthening with curriculum-mapped assessments and projects.',
-        image: '/BPC Schooling Overview Images/Saturnine Scholars.png',
-      },
-      {
-        title: 'Uranian Visionaries',
-        description: 'Leadership and entrepreneurship through niche projects.',
-        image: '/BPC Schooling Overview Images/Uranian Visionaries.png',
-      },
-      {
-        title: 'Neptunian Creators',
-        description: 'Mastery of digital branding and storytelling in blogs, videos, and podcasts.',
-        image: '/BPC Schooling Overview Images/Neptunian Creators.png',
-      }
     ],
     benefits: [
-      'Globally recognized curriculum',
-      'Hands-on technology experience',
-      'Creative arts integration',
-      'Leadership development',
-      'Industry certifications',
-      'Digital portfolio building',
+      'Comprehensive Education',
+      'Modern Skill Development',
+      'Project Portfolio',
+      'Global Perspective',
+      'Future Readiness'
     ],
     schedule: {
-      title: 'Daily Schedule',
+      title: 'Regular Schedule',
       times: [
-        'Morning: Core Academic Learning',
-        'Afternoon: Practical Lab Sessions',
-        'Evening: Creative Projects',
-      ],
-    },
-    heroImage: 'https://images.unsplash.com/photo-1632571401005-458e9d244591?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2940&q=80',
-    overviewImage: '/BPC Schooling Overview Images/Overview BPC-Schooling.png'
+        'Morning Academic Sessions: 8:00 AM - 1:00 PM',
+        'Afternoon Workshops: 2:00 PM - 4:00 PM',
+        'Optional Evening Activities: 4:30 PM - 6:00 PM'
+      ]
+    }
   },
   'bpcas': {
     variant: 'afterschool',
     title: 'Blueprint Club Afterschool (BPCAS)',
     subtitle: 'Enhance your skills beyond regular schooling',
     description: 'A flexible, modular learning program that complements regular schooling with hands-on experience, certifications, and skill development in technology, creative arts, and sciences.',
+    heroImage: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=2940&q=80',
     features: [
       {
-        title: 'Hands-on Learning',
-        description: 'Engage in practical projects and real-world applications.',
-        icon: BeakerIcon,
-      },
-      {
-        title: 'Flexible Schedule',
-        description: 'Choose modules and timings that fit your academic calendar.',
+        title: 'Flexible Learning',
+        description: 'Choose from various modules based on your interests.',
         icon: ClockIcon,
       },
       {
-        title: 'Expert Mentorship',
-        description: 'Learn from industry professionals and certified instructors.',
-        icon: UserGroupIcon,
+        title: 'Hands-on Experience',
+        description: 'Learn through practical projects and real applications.',
+        icon: BeakerIcon,
       },
       {
-        title: 'Certification Path',
-        description: 'Earn recognized certifications from leading companies.',
+        title: 'Expert Guidance',
+        description: 'Learn from industry professionals and experienced mentors.',
+        icon: ChatBubbleLeftIcon,
+      },
+      {
+        title: 'Skill Certification',
+        description: 'Earn recognized certifications in your chosen fields.',
         icon: AcademicCapIcon,
       },
     ],
     phases: [
       {
-        title: 'Technology Track',
-        description: 'AI, robotics, and programming fundamentals.',
-        image: '/images/tech-track.png',
+        title: 'Module Selection',
+        description: 'Choose your learning path from available options.',
       },
       {
-        title: 'Creative Arts',
-        description: 'Digital design, animation, and multimedia.',
-        image: '/images/creative-arts.png',
+        title: 'Skill Building',
+        description: 'Develop core competencies in chosen areas.',
       },
       {
-        title: 'Professional Skills',
-        description: 'Communication, leadership, and project management.',
-        image: '/images/prof-skills.png',
+        title: 'Project Work',
+        description: 'Apply skills in practical projects.',
+      },
+      {
+        title: 'Certification',
+        description: 'Complete assessments and earn certifications.',
       },
     ],
     benefits: [
-      'Industry-recognized certifications',
-      'Hands-on project experience',
-      'Professional portfolio development',
-      'Flexible learning schedule',
-      'Expert mentorship',
-      'Career guidance',
+      'Flexible Schedule',
+      'Practical Experience',
+      'Industry Certifications',
+      'Portfolio Development',
+      'Career Guidance'
     ],
     schedule: {
-      title: 'Program Schedule',
+      title: 'After-School Timings',
       times: [
-        'Weekday Evening Sessions',
-        'Weekend Workshops',
-        'Self-Paced Learning',
-      ],
-    },
-    certifications: [
-      'Adobe',
-      'AWS',
-      'IBM',
-    ],
-    heroImage: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2940&auto=format&fit=crop'
+        'Weekday Sessions: 4:00 PM - 7:00 PM',
+        'Weekend Workshops: 10:00 AM - 4:00 PM',
+        'Holiday Programs Available'
+      ]
+    }
   },
   'rsl-program': {
     variant: 'music',
@@ -245,6 +235,7 @@ const programData = {
     subtitle: 'Nurturing the next generation of musicians and digital creators',
     description: 'A comprehensive program offering graded music exams, live performances, and vocational qualifications that prepare students for professional careers in music, media, and creative industries.',
     youtubeVideoId: 'srVthlBpdnc',
+    heroImage: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2940&q=80',
     features: [
       {
         title: 'Graded Music Exams',
@@ -310,7 +301,6 @@ const programData = {
         'Flexible Studio Hours for Recording'
       ],
     },
-    heroImage: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2940&q=80'
   }
 };
 
@@ -318,11 +308,11 @@ export default function ProgramPage() {
   const router = useRouter();
   const { slug } = router.query;
   
-  if (!slug || typeof slug !== 'string' || !programData[slug as keyof typeof programData]) {
+  if (!slug || typeof slug !== 'string' || !programData[slug]) {
     return <div>Loading...</div>;
   }
 
-  const program = programData[slug as keyof typeof programData];
+  const program = programData[slug] as Program;
 
   return (
     <div className="min-h-screen bg-gray-100">
