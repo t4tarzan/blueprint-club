@@ -7,7 +7,7 @@ import YouTubeEmbed from './YouTubeEmbed';
 interface Feature {
   title: string;
   description: string;
-  icon: any;
+  icon: React.ForwardRefExoticComponent<React.SVGProps<SVGSVGElement>>;
 }
 
 interface Phase {
