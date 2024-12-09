@@ -14,6 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 import Navbar from '../../components/Navbar';
 import ProgramDetailCard from '../../components/ProgramDetailCard';
+import StagesSlideshow from '../../components/StagesSlideshow';
 
 interface Program {
   variant: 'adults' | 'schooling' | 'afterschool' | 'music';
@@ -28,6 +29,7 @@ interface Program {
   phases?: Array<{
     title: string;
     description: string;
+    image?: string;
   }>;
   benefits: string[];
   schedule?: {
@@ -35,6 +37,8 @@ interface Program {
     times: string[];
   };
   youtubeVideoId?: string;
+  showSlideshow?: boolean;
+  overviewImage?: string;
 }
 
 const programs: Program[] = [
@@ -98,6 +102,99 @@ const programs: Program[] = [
         'Online Learning: 24/7 Access',
       ],
     },
+  },
+  {
+    variant: 'schooling',
+    title: 'Blueprint Club Schooling (BPC Schooling)',
+    subtitle: 'Transform traditional education with technology and creativity',
+    description: 'An innovative schooling program that combines traditional academics with modern technology and creative disciplines, preparing students for comprehensive success in the digital age.',
+    features: [
+      {
+        title: 'Integrated Curriculum',
+        description: 'Blend NCERT, IB, and Cambridge standards with modern skills development.',
+        icon: AcademicCapIcon,
+      },
+      {
+        title: 'Real-World Labs',
+        description: 'Access specialized labs for hands-on learning in sciences, robotics, and digital media.',
+        icon: BeakerIcon,
+      },
+      {
+        title: 'Holistic Development',
+        description: 'Combine academics with arts, technology, and leadership training.',
+        icon: UserGroupIcon,
+      },
+      {
+        title: 'AI-Enhanced Learning',
+        description: 'Leverage cutting-edge AI tools for personalized learning paths.',
+        icon: ComputerDesktopIcon,
+      },
+    ],
+    phases: [
+      {
+        title: 'Solar Spark (Foundation)',
+        description: 'Build strong foundations in goal-setting, time management, and basic digital literacy.',
+        image: '/BPC Schooling Overview Images/Solar Spark.png',
+      },
+      {
+        title: 'Mercurial Mastery (Academic Excellence)',
+        description: 'Master core academic subjects while exploring interdisciplinary connections.',
+        image: '/BPC Schooling Overview Images/Mercurial Mastery.png',
+      },
+      {
+        title: 'Venusian Harmony (Creative Arts)',
+        description: 'Blend creativity with technology through digital arts and multimedia projects.',
+        image: '/BPC Schooling Overview Images/Venusian Harmony.png',
+      },
+      {
+        title: 'Global Groundbreakers',
+        description: 'Tackle real-world problems with industry mentors and develop innovative solutions.',
+        image: '/BPC Schooling Overview Images/Global Groundbreakers.png',
+      },
+      {
+        title: 'Martian Innovation',
+        description: 'Explore advanced technology and engineering through hands-on projects.',
+        image: '/BPC Schooling Overview Images/Martian Innovation.png',
+      },
+      {
+        title: "Jupiter's Guides",
+        description: 'Develop leadership skills and mentor younger students in their journey.',
+        image: "/BPC Schooling Overview Images/Jupiter's Guides.png",
+      },
+      {
+        title: 'Saturnine Scholars',
+        description: 'Master complex academic concepts and prepare for higher education.',
+        image: '/BPC Schooling Overview Images/Saturnine Scholars.png',
+      },
+      {
+        title: 'Uranian Visionaries',
+        description: 'Explore cutting-edge technology and future career paths.',
+        image: '/BPC Schooling Overview Images/Uranian Visionaries.png',
+      },
+      {
+        title: 'Neptunian Creators',
+        description: 'Create impactful projects that benefit the community and beyond.',
+        image: '/BPC Schooling Overview Images/Neptunian Creators.png',
+      },
+    ],
+    benefits: [
+      'Globally recognized curriculum',
+      'Hands-on technology experience',
+      'Creative arts integration',
+      'Leadership development',
+      'Industry certifications',
+      'Digital portfolio building',
+    ],
+    schedule: {
+      title: 'Daily Schedule',
+      times: [
+        'Morning: Core Academic Learning (8:00 AM - 12:00 PM)',
+        'Afternoon: Practical Lab Sessions (1:00 PM - 3:00 PM)',
+        'Evening: Creative Projects (3:30 PM - 5:00 PM)',
+      ],
+    },
+    showSlideshow: true,
+    overviewImage: '/BPC Schooling Overview Images/Overview BPC-Schooling.png',
   },
   {
     variant: 'afterschool',

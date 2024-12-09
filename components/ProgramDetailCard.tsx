@@ -13,6 +13,7 @@ interface Feature {
 interface Phase {
   title: string;
   description: string;
+  image?: string;
 }
 
 interface ProgramDetailCardProps {
@@ -148,8 +149,9 @@ const ProgramDetailCard: React.FC<ProgramDetailCardProps> = ({
         </div>
 
         {/* Slideshow */}
-        {showSlideshow && overviewImage && (
+        {showSlideshow && overviewImage && phases && (
           <div className="p-8 border-t">
+            <h3 className="text-xl font-semibold text-gray-900 mb-6">Program Journey</h3>
             <div className="relative w-full mx-auto" style={{ maxWidth: '800px' }}>
               <StagesSlideshow stages={phases} overviewImage={overviewImage} />
             </div>
