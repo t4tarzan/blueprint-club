@@ -99,21 +99,21 @@ const StagesSlideshow: React.FC<StagesSlideshowProps> = ({ stages, overviewImage
             style={{ pointerEvents: 'auto', touchAction: 'pan-y' }}
           >
             <div className="relative w-full h-full">
-              <Image
-                src={allSlides[currentIndex].image}
-                alt={allSlides[currentIndex].title}
-                fill
-                style={{ objectFit: 'contain' }}
-                priority
-                quality={100}
-              />
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
-                <h3 className="text-2xl font-bold text-white mb-2">
-                  {allSlides[currentIndex].title}
-                </h3>
-                <p className="text-white/90">
-                  {allSlides[currentIndex].description}
-                </p>
+              {allSlides[currentIndex].image && (
+                <Image
+                  src={allSlides[currentIndex].image || ''}
+                  alt={allSlides[currentIndex].title}
+                  fill
+                  priority={currentIndex === 0}
+                  quality={75}
+                  sizes="(max-width: 800px) 100vw, 800px"
+                  className="object-contain"
+                  loading={currentIndex < 3 ? "eager" : "lazy"}
+                />
+              )}
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-black bg-opacity-50 text-white">
+                <h3 className="text-xl font-semibold mb-2">{allSlides[currentIndex].title}</h3>
+                <p className="text-sm opacity-90">{allSlides[currentIndex].description}</p>
               </div>
             </div>
           </motion.div>
@@ -122,33 +122,25 @@ const StagesSlideshow: React.FC<StagesSlideshowProps> = ({ stages, overviewImage
 
       {/* Navigation buttons */}
       <button
-        className="absolute -left-8 top-1/2 transform -translate-y-1/2 bg-gray-900 rounded-full p-2 transition-colors z-20 cursor-pointer"
-        onClick={() => {
-          setDirection(-1);
-          paginate(-1);
-        }}
-        aria-label="Previous slide"
+        className="absolute left-4 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-white bg-opacity-30 hover:bg-opacity-50 transition-all"
+        onClick={() => paginate(-1)}
       >
-        <ChevronLeftIcon className="h-6 w-6 text-white" />
+        <ChevronLeftIcon className="w-6 h-6 text-white" />
       </button>
       <button
-        className="absolute -right-8 top-1/2 transform -translate-y-1/2 bg-gray-900 rounded-full p-2 transition-colors z-20 cursor-pointer"
-        onClick={() => {
-          setDirection(1);
-          paginate(1);
-        }}
-        aria-label="Next slide"
+        className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-white bg-opacity-30 hover:bg-opacity-50 transition-all"
+        onClick={() => paginate(1)}
       >
-        <ChevronRightIcon className="h-6 w-6 text-white" />
+        <ChevronRightIcon className="w-6 h-6 text-white" />
       </button>
 
-      {/* Dots navigation */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
+      {/* Progress dots */}
+      <div className="absolute bottom-20 left-0 right-0 flex justify-center gap-2">
         {allSlides.map((_, index) => (
           <button
             key={index}
-            className={`w-2 h-2 rounded-full transition-colors ${
-              index === currentIndex ? 'bg-white' : 'bg-white/50'
+            className={`w-2 h-2 rounded-full transition-all ${
+              index === currentIndex ? 'bg-white scale-125' : 'bg-white bg-opacity-50'
             }`}
             onClick={() => {
               setDirection(index > currentIndex ? 1 : -1);
