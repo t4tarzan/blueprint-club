@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --white: #FFFFFF;
+  --chalk-grey: #E0E0E0;
+  --dark-grey: #424242;
+  --light-grey: #F5F5F5;
+  --text-grey: #757575;
+  --mango-yellow: #FFC107;
+  --mango-yellow-dark: #FFB300;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-white text-[#424242];
+  }
+}
+
+@layer components {
+  .nav-link {
+    @apply text-[#424242] hover:text-[#FFC107] transition-colors duration-200;
+  }
+
+  .button-primary {
+    @apply inline-block bg-[#FFC107] text-white px-8 py-4 rounded-full font-semibold 
+           text-lg hover:bg-[#FFB300] transition-colors duration-200 shadow-md;
+  }
+
+  .section {
+    @apply py-20 px-4 sm:px-6 lg:px-8;
+  }
+
+  .section-alt {
+    @apply bg-[#E0E0E0];
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-[#F5F5F5];
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-[#E0E0E0] rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-[#FFC107];
+}
