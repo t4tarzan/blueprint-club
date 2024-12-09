@@ -2,12 +2,14 @@ import { motion } from 'framer-motion';
 import {
   AcademicCapIcon,
   UserGroupIcon,
-  ChipIcon,
+  CircuitBoardIcon,
   ClockIcon,
   LightBulbIcon,
-  ChatBubbleBottomCenterTextIcon,
+  ChatBubbleLeftIcon,
   RocketLaunchIcon,
-  CubeTransparentIcon,
+  CubeIcon,
+  CommandLineIcon,
+  BeakerIcon
 } from '@heroicons/react/24/outline';
 import Navbar from '../../components/Navbar';
 import ProgramDetailCard from '../../components/ProgramDetailCard';
@@ -33,7 +35,7 @@ const ProgramDetails = () => {
         {
           title: 'AI-Enhanced Learning',
           description: 'Leverage cutting-edge AI tools for automated onboarding, content creation, and personalized growth recommendations.',
-          icon: ChipIcon,
+          icon: CircuitBoardIcon,
         },
         {
           title: 'Structured Growth',
@@ -90,12 +92,12 @@ const ProgramDetails = () => {
         {
           title: 'Real-World Labs',
           description: 'Access specialized labs for hands-on learning in sciences, robotics, and digital media.',
-          icon: CubeTransparentIcon,
+          icon: CubeIcon,
         },
         {
           title: 'Holistic Development',
           description: 'Combine academics with arts, technology, and leadership training.',
-          icon: ChatBubbleBottomCenterTextIcon,
+          icon: ChatBubbleLeftIcon,
         },
         {
           title: 'Personalized Learning',
@@ -155,21 +157,21 @@ const ProgramDetails = () => {
         {
           title: 'Modular Learning',
           description: 'Choose from 16 specialized divisions based on your interests and goals.',
-          icon: CubeTransparentIcon,
+          icon: CubeIcon,
         },
         {
           title: 'Specialized Labs',
-          description: 'Access five state-of-the-art labs for hands-on learning and projects.',
-          icon: LightBulbIcon,
+          description: 'Access state-of-the-art facilities for hands-on learning.',
+          icon: BeakerIcon,
         },
         {
-          title: 'Flexible Schedule',
-          description: 'Convenient after-school hours with weekend project time.',
-          icon: ClockIcon,
+          title: 'Expert Mentorship',
+          description: 'Learn from industry professionals and certified instructors.',
+          icon: UserGroupIcon,
         },
         {
-          title: 'Professional Certifications',
-          description: 'Earn industry-recognized certifications while building your portfolio.',
+          title: 'Certification Path',
+          description: 'Earn recognized certifications from leading companies.',
           icon: AcademicCapIcon,
         },
       ],
