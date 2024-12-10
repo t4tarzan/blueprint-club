@@ -44,7 +44,11 @@ const StagesSlideshow: React.FC<StagesSlideshowProps> = ({ stages, overviewImage
       img.onload = () => {
         loadedImages++;
         setLoadingProgress((loadedImages / totalImages) * 100);
-        setPreloadedImages(prev => new Set([...prev, src]));
+        setPreloadedImages(prev => {
+          const newSet = new Set(prev);
+          newSet.add(src);
+          return newSet;
+        });
         if (loadedImages === totalImages) {
           setIsLoading(false);
         }
