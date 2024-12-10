@@ -14,6 +14,7 @@ import {
 import Navbar from '../../components/Navbar';
 import Hero from '../../components/Hero';
 import ProgramDetailCard from '../../components/ProgramDetailCard';
+import YouTubeEmbed from '@/components/YouTubeEmbed';
 
 type ProgramVariant = 'adults' | 'schooling' | 'afterschool' | 'music';
 
@@ -40,6 +41,7 @@ interface Program {
   };
   youtubeVideoId?: string;
   overviewImage?: string;
+  certifications?: string[];
 }
 
 const programData: Record<string, Program> = {
@@ -48,7 +50,7 @@ const programData: Record<string, Program> = {
     title: 'Blueprint Club for Adults (BPC Adults)',
     subtitle: 'Foster expertise-driven innovation and micro-niche development',
     description: 'A comprehensive program designed for seasoned professionals and aspiring youth to build personal brands, develop expertise, and create sustainable knowledge-based products while fostering cross-generational collaboration.',
-    heroImage: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=2850&q=80',
+    heroImage: '/images/hero/bpc-adults-hero.jpg',
     features: [
       {
         title: 'Micro-Niche Development',
@@ -108,155 +110,212 @@ const programData: Record<string, Program> = {
   'bpc-schooling': {
     variant: 'schooling',
     title: 'Blueprint Club Schooling (BPC Schooling)',
-    subtitle: 'Transform traditional education with technology and creativity',
-    description: 'An innovative schooling program that combines traditional academics with modern technology and creative disciplines, preparing students for comprehensive success in the digital age.',
-    heroImage: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=2932&q=80',
+    subtitle: 'Transformative education integrating traditional learning with modern technology',
+    description: 'A comprehensive schooling program that combines traditional education with cutting-edge technology and creative disciplines. Our curriculum aligns with NCERT, IB, and Cambridge standards, featuring nine unique stages of development to prepare students for academic, personal, and professional success.',
+    heroImage: '/images/hero/bpc-schooling-hero.jpg',
+    youtubeVideoId: 'oJuYhqUkNP4',
     features: [
       {
         title: 'Integrated Curriculum',
-        description: 'Blend NCERT, IB, and Cambridge standards with modern skills development.',
+        description: 'Comprehensive academic growth aligned with NCERT, IB, and Cambridge standards, featuring our unique 9-stage learning system.',
         icon: AcademicCapIcon,
       },
       {
         title: 'Real-World Labs',
-        description: 'Access specialized labs for hands-on learning in sciences, robotics, and digital media.',
+        description: 'Specialized labs for physics, chemistry, biology, robotics, IoT, and AI, providing hands-on experience with real-world technology.',
         icon: BeakerIcon,
       },
       {
         title: 'Holistic Development',
-        description: 'Combine academics with arts, technology, and leadership training.',
-        icon: UserGroupIcon,
+        description: 'Integration of music, art, and digital media to foster creativity alongside traditional academics.',
+        icon: LightBulbIcon,
       },
       {
-        title: 'AI-Enhanced Learning',
-        description: 'Leverage cutting-edge AI tools for personalized learning paths.',
-        icon: CommandLineIcon,
+        title: 'Personalized Learning',
+        description: 'Individual goal-setting and mentorship to help students achieve their unique career aspirations.',
+        icon: UserGroupIcon,
       },
     ],
     phases: [
       {
-        title: 'Solar Spark (Foundation)',
-        description: 'Build strong foundations in goal-setting, time management, and basic digital literacy.',
-        image: '/BPC Schooling Overview Images/Solar Spark.png',
+        title: 'Solar Spark',
+        description: 'Foundation phase focusing on goal-setting and time management skills. Students learn to organize their academic life and develop essential study habits.',
+        image: '/BPC Schooling Overview Images/Solar Spark.png'
       },
       {
-        title: 'Mercurial Mastery (Academic Excellence)',
-        description: 'Master core academic subjects while exploring interdisciplinary connections.',
-        image: '/BPC Schooling Overview Images/Mercurial Mastery.png',
+        title: 'Mercurial Mastery',
+        description: 'Students develop academic balance and interdisciplinary thinking, connecting concepts across subjects for deeper understanding.',
+        image: '/BPC Schooling Overview Images/Mercurial Mastery.png'
       },
       {
-        title: 'Venusian Harmony (Creative Arts)',
-        description: 'Blend creativity with technology through digital arts and multimedia projects.',
-        image: '/BPC Schooling Overview Images/Venusian Harmony.png',
+        title: 'Venusian Harmony',
+        description: 'Integration of creativity and scientific thinking through coding, programmable chemistry experiments, and artistic expression.',
+        image: '/BPC Schooling Overview Images/Venusian Harmony.png'
       },
       {
         title: 'Global Groundbreakers',
-        description: 'Tackle real-world problems with industry mentors and develop innovative solutions.',
-        image: '/BPC Schooling Overview Images/Global Groundbreakers.png',
+        description: 'Students engage in real-world problem-solving with guidance from IT professionals and industry mentors.',
+        image: '/BPC Schooling Overview Images/Global Groundbreakers.png'
       },
       {
         title: 'Martian Innovation',
-        description: 'Explore advanced technology and engineering through hands-on projects.',
-        image: '/BPC Schooling Overview Images/Martian Innovation.png',
+        description: 'Advanced phase focusing on robotics, IoT, and AI projects, preparing students for future technology careers.',
+        image: '/BPC Schooling Overview Images/Martian Innovation.png'
       },
       {
         title: "Jupiter's Guides",
-        description: 'Develop leadership skills and mentor younger students in their journey.',
-        image: "/BPC Schooling Overview Images/Jupiter's Guides.png",
+        description: 'Career exploration through industry mentorship and practical exposure to various professional fields.',
+        image: "/BPC Schooling Overview Images/Jupiter's Guides.png"
       },
       {
         title: 'Saturnine Scholars',
-        description: 'Master complex academic concepts and prepare for higher education.',
-        image: '/BPC Schooling Overview Images/Saturnine Scholars.png',
+        description: 'Academic excellence through curriculum-mapped assessments and challenging projects that test comprehensive understanding.',
+        image: '/BPC Schooling Overview Images/Saturnine Scholars.png'
       },
       {
         title: 'Uranian Visionaries',
-        description: 'Explore cutting-edge technology and future career paths.',
-        image: '/BPC Schooling Overview Images/Uranian Visionaries.png',
+        description: 'Development of leadership and entrepreneurship skills through specialized niche projects and initiatives.',
+        image: '/BPC Schooling Overview Images/Uranian Visionaries.png'
       },
       {
         title: 'Neptunian Creators',
-        description: 'Create impactful projects that benefit the community and beyond.',
-        image: '/BPC Schooling Overview Images/Neptunian Creators.png',
-      },
+        description: 'Mastering digital branding and storytelling through blogs, videos, and podcasts, preparing for modern communication.',
+        image: '/BPC Schooling Overview Images/Neptunian Creators.png'
+      }
     ],
     benefits: [
-      'Globally recognized curriculum',
-      'Hands-on technology experience',
-      'Creative arts integration',
-      'Leadership development',
-      'Industry certifications',
-      'Digital portfolio building',
+      'Globally recognized educational standards and certifications',
+      'Hands-on experience in specialized labs and real-world projects',
+      'Integration of creative and technical disciplines',
+      'Personalized mentorship and career guidance',
+      'Digital and physical portfolio development',
+      'Leadership and entrepreneurship skills',
+      'Confidence building through practical projects',
+      'Balanced focus on academics and modern skills'
     ],
     schedule: {
       title: 'Daily Schedule',
       times: [
-        'Morning: Core Academic Learning (8:00 AM - 12:00 PM)',
-        'Afternoon: Practical Lab Sessions (1:00 PM - 3:00 PM)',
-        'Evening: Creative Projects (3:30 PM - 5:00 PM)',
-      ],
+        'Morning Sessions: Core academic learning',
+        'Afternoon Labs: Practical, project-based sessions',
+        'Regular assessments combining traditional tests with real-world evaluations',
+        'Portfolio building sessions throughout the program'
+      ]
     },
-    overviewImage: '/BPC Schooling Overview Images/Overview BPC-Schooling.png',
+    overviewImage: '/BPC Schooling Overview Images/Overview BPC-Schooling.png'
   },
   'bpcas': {
     variant: 'afterschool',
-    title: 'Blueprint Club Afterschool (BPCAS)',
-    subtitle: 'Enhance your skills beyond regular schooling',
-    description: 'A flexible, modular learning program that complements regular schooling with hands-on experience, certifications, and skill development in technology, creative arts, and sciences.',
-    heroImage: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=2940&q=80',
+    title: 'Blueprint Club Afterschool Program (BPCAS)',
+    subtitle: 'Modular skill-based learning for high school students',
+    description: 'A comprehensive afterschool program providing high school students with modular, skill-based learning experiences. Our program combines hands-on workshops, cutting-edge labs, and globally recognized certifications to help students excel in their chosen fields.',
+    heroImage: '/images/hero/bpcas-hero.jpg',
     features: [
       {
-        title: 'Flexible Learning',
-        description: 'Choose from various modules based on your interests.',
-        icon: ClockIcon,
+        title: 'Modular Learning System',
+        description: 'Choose from specialized modules including Tech, Creative, and Science tracks, each consisting of three divisions completed in one year.',
+        icon: CubeIcon,
       },
       {
-        title: 'Hands-on Experience',
-        description: 'Learn through practical projects and real applications.',
+        title: 'Specialized Labs',
+        description: 'Access to five state-of-the-art labs: IoT & Robotics, Creative Media, Biology & Chemistry, Physics, and AI & Networking.',
         icon: BeakerIcon,
       },
       {
-        title: 'Expert Guidance',
-        description: 'Learn from industry professionals and experienced mentors.',
-        icon: ChatBubbleLeftIcon,
+        title: 'Flexible Schedule',
+        description: 'Convenient after-school hours with weekday sessions from 4:30 PM to 7:30 PM and weekend project time.',
+        icon: ClockIcon,
       },
       {
-        title: 'Skill Certification',
-        description: 'Earn recognized certifications in your chosen fields.',
+        title: 'Certifications',
+        description: 'Earn industry-recognized certifications from Google, Microsoft, Cisco, and Adobe while building a professional portfolio.',
         icon: AcademicCapIcon,
       },
     ],
     phases: [
       {
-        title: 'Module Selection',
-        description: 'Choose your learning path from available options.',
+        title: 'IoT and Embedded Systems',
+        description: 'Learn to design and build Internet of Things devices and embedded systems.',
       },
       {
-        title: 'Skill Building',
-        description: 'Develop core competencies in chosen areas.',
+        title: 'Data Science and Analytics',
+        description: 'Master data analysis, visualization, and machine learning fundamentals.',
       },
       {
-        title: 'Project Work',
-        description: 'Apply skills in practical projects.',
+        title: 'Content Creation',
+        description: 'Develop skills in digital storytelling, video production, and content marketing.',
       },
       {
-        title: 'Certification',
-        description: 'Complete assessments and earn certifications.',
+        title: 'Robotics and Automation',
+        description: 'Build and program robots while learning automation principles.',
       },
+      {
+        title: 'Art and Design',
+        description: 'Express creativity through digital art, graphic design, and UI/UX.',
+      },
+      {
+        title: 'Green Technology',
+        description: 'Explore sustainable technologies and environmental solutions.',
+      },
+      {
+        title: 'Programming Foundations',
+        description: 'Learn core programming concepts and popular languages.',
+      },
+      {
+        title: 'Networking',
+        description: 'Understand computer networks and cybersecurity principles.',
+      },
+      {
+        title: 'Digital Marketing',
+        description: 'Master social media, SEO, and digital marketing strategies.',
+      },
+      {
+        title: 'Leadership',
+        description: 'Develop communication and leadership skills for success.',
+      },
+      {
+        title: 'Health and Wellness',
+        description: 'Explore health sciences and culinary arts.',
+      },
+      {
+        title: 'Electronics',
+        description: 'Learn electronic circuit design and hardware development.',
+      },
+      {
+        title: 'AI Technologies',
+        description: 'Explore artificial intelligence and machine learning applications.',
+      },
+      {
+        title: 'Space Exploration',
+        description: 'Study astronomy and space science fundamentals.',
+      },
+      {
+        title: 'Science and Forensics',
+        description: 'Learn scientific investigation and forensic techniques.',
+      },
+      {
+        title: 'Creative Expression',
+        description: 'Explore humanities and various forms of creative expression.',
+      }
     ],
     benefits: [
-      'Flexible Schedule',
-      'Practical Experience',
-      'Industry Certifications',
-      'Portfolio Development',
-      'Career Guidance'
+      'Hands-on experience in high-demand fields',
+      'Global certifications from industry leaders',
+      'Real-world project portfolio',
+      'Cross-disciplinary skill development',
+      'Access to state-of-the-art labs',
+      'Flexible learning schedule',
+      'Professional mentorship',
+      'Industry-relevant training'
     ],
     schedule: {
-      title: 'After-School Timings',
+      title: 'Program Schedule',
       times: [
-        'Weekday Sessions: 4:00 PM - 7:00 PM',
-        'Weekend Workshops: 10:00 AM - 4:00 PM',
-        'Holiday Programs Available'
+        'Weekday Division 1: 4:30 PM – 6:30 PM',
+        'Weekday Division 2: 6:30 PM – 7:30 PM',
+        'Weekend Project Time: Flexible 2-hour slots',
+        'Duration: One year per module (3 divisions)',
+        'Additional divisions available at ₹16,000/month'
       ]
     }
   },
@@ -368,7 +427,8 @@ export default function ProgramPage() {
             phases={program.phases}
             benefits={program.benefits}
             schedule={program.schedule}
-            showSlideshow={program.variant === 'schooling'}
+            certifications={program.certifications}
+            showSlideshow={true}
             overviewImage={program.overviewImage}
             youtubeVideoId={program.youtubeVideoId}
           />

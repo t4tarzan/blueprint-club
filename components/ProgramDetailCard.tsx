@@ -119,11 +119,13 @@ const ProgramDetailCard: React.FC<ProgramDetailCardProps> = ({
           </div>
         )}
 
-        {/* YouTube Video for RSL Program */}
-        {variant === 'music' && (
+        {/* YouTube Video Section */}
+        {(variant === 'music' || variant === 'schooling') && youtubeVideoId && (
           <div className="mt-12 mb-12">
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">Featured Performance</h3>
-            <YouTubeEmbed videoId={youtubeVideoId || ''} />
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">
+              {variant === 'music' ? 'Featured Performance' : 'Program Overview'}
+            </h3>
+            <YouTubeEmbed videoId={youtubeVideoId} />
           </div>
         )}
 

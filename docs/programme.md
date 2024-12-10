@@ -58,17 +58,8 @@ Call to Action
 Join the Blueprint Club Today!
 Build your personal brand, grow your expertise, and collaborate with a community that values innovation and sustainability. [Sign Up Now]
 
-Let me know if you'd like me to proceed with BPC Schooling next!
+----------------
 
-
-
-
-
-
-You said:
-yes sure
-ChatGPT said:
-ChatGPT
 2. Blueprint Club Schooling (BPC Schooling)
 Mission
 To create a transformative schooling experience that integrates traditional education with cutting-edge technology and creative disciplines, preparing students for academic, personal, and professional success in the modern world.
@@ -89,17 +80,19 @@ Opportunities to publish audio, video, and text-based projects, enabling student
 4. Personalized Learning
 Individualized goal-setting and mentorship to help students achieve their unique career aspirations.
 A balanced focus on academics and skill-building, ensuring students excel in both traditional and modern educational frameworks.
-9 Stages of Development
-Solar Spark: Goal-setting and time management.
-Mercurial Mastery: Academic balance and interdisciplinary growth.
-Venusian Harmony: Creativity and scientific thinking through coding, programmable chemistry, and art.
-Global Groundbreakers: Real-world problem-solving with IT and industry mentors.
-Martian Innovators: Advanced robotics, IoT, and AI projects.
-Jupiter’s Guides: Career clarity through industry mentorship and practical exposure.
-Saturnine Scholars: Academic strengthening with curriculum-mapped assessments and projects.
-Uranian Visionaries: Leadership and entrepreneurship through niche projects.
-Neptunian Creators: Mastery of digital branding and storytelling in blogs, videos, and podcasts.
-Program Structure
+
+### 9 Stages of Development
+1. Solar Spark: Goal-setting and time management.
+2. Mercurial Mastery: Academic balance and interdisciplinary growth.
+3. Venusian Harmony: Creativity and scientific thinking through coding, programmable chemistry, and art.
+4. Global Groundbreakers: Real-world problem-solving with IT and industry mentors.
+5. Martian Innovators: Advanced robotics, IoT, and AI projects.
+6. Jupiter’s Guides: Career clarity through industry mentorship and practical exposure.
+7. Saturnine Scholars: Academic strengthening with curriculum-mapped assessments and projects.
+8. Uranian Visionaries: Leadership and entrepreneurship through niche projects.
+9. Neptunian Creators: Mastery of digital branding and storytelling in blogs, videos, and podcasts.
+
+### Program Structure
 Daily Schedule:
 Morning Sessions: Core academic learning.
 Afternoon Labs: Practical, project-based sessions.
@@ -132,17 +125,7 @@ Call to Action
 Join BPC Schooling Today!
 Empower your child with the skills and confidence they need to excel in academics, career, and life. [Enroll Now]
 
-Let me know if you'd like me to proceed with BPCAS next!
-
-
-
-
-
-
-You said:
-yes please
-ChatGPT said:
-ChatGPT
+---------
 3. Blueprint Club Afterschool Program (BPCAS)
 Mission
 To provide high school students with a modular, skill-based learning experience that complements their regular schooling while equipping them with certifications, real-world project experience, and future-ready skills.
@@ -228,17 +211,7 @@ Call to Action
 Enroll in BPCAS Today!
 Choose your module, gain certifications, and embark on a journey of skill-based learning and innovation. [Register Now]
 
-Let me know if you'd like me to proceed with the RSL Program next!
-
-
-
-
-
-
-You said:
-yes please
-ChatGPT said:
-ChatGPT
+---------
 4. White Noise Academy (WNA) - RSL Program
 Mission
 To nurture the next generation of musicians and digital creators through graded music exams, live performances, and vocational qualifications that prepare them for professional careers in music, media, and creative industries.
@@ -312,7 +285,7 @@ Call to Action
 Join the White Noise Academy RSL Program Today!
 Master your art, gain global certifications, and launch your career in music and media. [Register Now]
 
-
+-----------------
 # Blueprint Club Website UI Specifications
 
 ## Color Palette
