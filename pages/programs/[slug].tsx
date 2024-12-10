@@ -14,7 +14,7 @@ import {
 import Navbar from '../../components/Navbar';
 import Hero from '../../components/Hero';
 import ProgramDetailCard from '../../components/ProgramDetailCard';
-import YouTubeEmbed from '@/components/YouTubeEmbed';
+import YouTubeEmbed from '../../components/YouTubeEmbed';
 
 type ProgramVariant = 'adults' | 'schooling' | 'afterschool' | 'music';
 
