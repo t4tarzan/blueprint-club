@@ -95,8 +95,8 @@ const StagesSlideshow: React.FC<StagesSlideshowProps> = ({ stages, overviewImage
   };
 
   return (
-    <div className="relative w-[800px] h-[500px] bg-gray-900 rounded-xl mx-auto">
-      <div className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-xl">
+    <div className="relative w-full aspect-[16/10] max-w-4xl bg-gray-900 rounded-xl mx-auto overflow-hidden">
+      <div className="absolute inset-0 flex items-center justify-center">
         {isLoading ? (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
             <LoadingSpinner progress={loadingProgress} />
@@ -124,7 +124,7 @@ const StagesSlideshow: React.FC<StagesSlideshowProps> = ({ stages, overviewImage
                     fill
                     priority={currentIndex === 0}
                     quality={75}
-                    sizes="(max-width: 800px) 100vw, 800px"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 800px"
                     className="object-contain"
                     loading={currentIndex < 3 ? "eager" : "lazy"}
                     placeholder="blur"
@@ -133,7 +133,7 @@ const StagesSlideshow: React.FC<StagesSlideshowProps> = ({ stages, overviewImage
                 )}
                 <div className="absolute bottom-0 left-0 right-0 p-4 bg-black bg-opacity-50 text-white">
                   <h3 className="text-xl font-semibold mb-2">{allSlides[currentIndex].title}</h3>
-                  <p className="text-sm opacity-90">{allSlides[currentIndex].description}</p>
+                  <p className="text-sm opacity-90 line-clamp-2 md:line-clamp-none">{allSlides[currentIndex].description}</p>
                 </div>
               </div>
             </motion.div>
@@ -145,26 +145,26 @@ const StagesSlideshow: React.FC<StagesSlideshowProps> = ({ stages, overviewImage
         <>
           {/* Navigation buttons */}
           <button
-            className="absolute left-4 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-black bg-opacity-50 hover:bg-opacity-70 transition-all z-20"
+            className="absolute left-2 md:left-4 top-1/2 transform -translate-y-1/2 p-1 md:p-2 rounded-full bg-black bg-opacity-50 hover:bg-opacity-70 transition-all z-20"
             onClick={() => paginate(-1)}
             aria-label="Previous slide"
           >
-            <ChevronLeftIcon className="w-6 h-6 text-white" />
+            <ChevronLeftIcon className="w-4 h-4 md:w-6 md:h-6 text-white" />
           </button>
           <button
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-black bg-opacity-50 hover:bg-opacity-70 transition-all z-20"
+            className="absolute right-2 md:right-4 top-1/2 transform -translate-y-1/2 p-1 md:p-2 rounded-full bg-black bg-opacity-50 hover:bg-opacity-70 transition-all z-20"
             onClick={() => paginate(1)}
             aria-label="Next slide"
           >
-            <ChevronRightIcon className="w-6 h-6 text-white" />
+            <ChevronRightIcon className="w-4 h-4 md:w-6 md:h-6 text-white" />
           </button>
 
           {/* Progress dots */}
-          <div className="absolute bottom-20 left-0 right-0 flex justify-center gap-2 z-20">
+          <div className="absolute bottom-20 left-0 right-0 flex justify-center gap-1 md:gap-2 z-20">
             {allSlides.map((_, index) => (
               <button
                 key={index}
-                className={`w-2 h-2 rounded-full transition-all ${
+                className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full transition-all ${
                   index === currentIndex ? 'bg-white scale-125' : 'bg-white bg-opacity-50'
                 }`}
                 onClick={() => {

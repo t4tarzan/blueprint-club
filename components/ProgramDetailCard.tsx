@@ -152,9 +152,9 @@ const ProgramDetailCard: React.FC<ProgramDetailCardProps> = ({
 
         {/* Slideshow */}
         {showSlideshow && overviewImage && phases && (
-          <div className="p-8 border-t">
+          <div className="p-4 md:p-8 border-t">
             <h3 className="text-xl font-semibold text-gray-900 mb-6">Program Journey</h3>
-            <div className="relative w-full mx-auto" style={{ maxWidth: '800px' }}>
+            <div className="relative w-full overflow-hidden">
               <StagesSlideshow stages={phases} overviewImage={overviewImage} />
             </div>
           </div>

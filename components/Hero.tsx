@@ -64,6 +64,7 @@ const Hero = ({
           <p className="text-xl md:text-2xl text-[#757575] mb-8 max-w-3xl mx-auto">
             {subtitle}
           </p>
+          
           {showButton && (
             <motion.div
               initial={{ opacity: 0 }}

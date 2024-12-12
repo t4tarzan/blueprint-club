@@ -50,7 +50,7 @@ const programData: Record<string, Program> = {
     title: 'Blueprint Club for Adults (BPC Adults)',
     subtitle: 'Foster expertise-driven innovation and micro-niche development',
     description: 'A comprehensive program designed for seasoned professionals and aspiring youth to build personal brands, develop expertise, and create sustainable knowledge-based products while fostering cross-generational collaboration.',
-    heroImage: '/images/hero/bpc-adults-hero.jpg',
+    heroImage: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=2850&q=80',
     features: [
       {
         title: 'Micro-Niche Development',
@@ -112,7 +112,7 @@ const programData: Record<string, Program> = {
     title: 'Blueprint Club Schooling (BPC Schooling)',
     subtitle: 'Transformative education integrating traditional learning with modern technology',
     description: 'A comprehensive schooling program that combines traditional education with cutting-edge technology and creative disciplines. Our curriculum aligns with NCERT, IB, and Cambridge standards, featuring nine unique stages of development to prepare students for academic, personal, and professional success.',
-    heroImage: '/images/hero/bpc-schooling-hero.jpg',
+    heroImage: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=2932&q=80',
     youtubeVideoId: 'oJuYhqUkNP4',
     features: [
       {
@@ -209,7 +209,7 @@ const programData: Record<string, Program> = {
     title: 'Blueprint Club Afterschool Program (BPCAS)',
     subtitle: 'Modular skill-based learning for high school students',
     description: 'A comprehensive afterschool program providing high school students with modular, skill-based learning experiences. Our program combines hands-on workshops, cutting-edge labs, and globally recognized certifications to help students excel in their chosen fields.',
-    heroImage: '/images/hero/bpcas-hero.jpg',
+    heroImage: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=2940&q=80',
     features: [
       {
         title: 'Modular Learning System',
@@ -321,11 +321,11 @@ const programData: Record<string, Program> = {
   },
   'rsl-program': {
     variant: 'music',
-    title: 'White Noise Academy RSL Club',
-    subtitle: 'Nurturing the next generation of musicians and digital creators',
-    description: 'A comprehensive program offering graded music exams, live performances, and vocational qualifications that prepare students for professional careers in music, media, and creative industries.',
+    title: 'RSL Awards Music Program',
+    subtitle: 'Globally recognized music education and certification',
+    description: 'An internationally acclaimed music education program offering comprehensive training in various instruments and music theory. Our program follows the prestigious RSL Awards curriculum, providing students with globally recognized certifications.',
     youtubeVideoId: 'srVthlBpdnc',
-    heroImage: 'https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2940&q=80',
+    heroImage: 'https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=2940&q=80',
     features: [
       {
         title: 'Graded Music Exams',
@@ -411,6 +411,7 @@ export default function ProgramPage() {
         title={program.title}
         subtitle={program.subtitle}
         backgroundImage={program.heroImage}
+        showButton={false}
       />
       <div className="container mx-auto px-4 py-12">
         <motion.div
