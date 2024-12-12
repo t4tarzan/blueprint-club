@@ -15,10 +15,11 @@ model User {
   name          String?
   email         String    @unique
   password      String?
-  emailVerified DateTime? @map("email_verified")
+  emailVerified DateTime?
   image         String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
   accounts      Account[]
   sessions      Session[]
   profile       Profile?
@@ -59,11 +60,9 @@ model Session {
 model VerificationToken {
   id         String   @id @default(cuid())
   token      String   @unique
-  email      String
+  email      String   @unique
   expires    DateTime
   createdAt  DateTime @default(now())
-
-  @@unique([email])
 }
 
 model Profile {
@@ -107,18 +106,20 @@ model Like {
   id        String   @id @default(cuid())
   postId    String
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+
+  @@unique([postId, userId])
 }
 
 model Follow {
   id          String   @id @default(cuid())
   followerId  String
   followingId String
+  createdAt   DateTime @default(now())
   follower    User     @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
   following   User     @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
 
   @@unique([followerId, followingId])
 }
