@@ -1,12 +1,11 @@
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import { compare } from 'bcryptjs';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { PrismaAdapter } from '@auth/prisma-adapter';
 import { prisma } from '../../../lib/prisma';
-import { User } from 'next-auth';
+import { CustomPrismaAdapter } from '../../../lib/auth/prismaAdapter';
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  adapter: CustomPrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -14,7 +13,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials): Promise<User | null> {
+      async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error('Please enter your email and password');
         }
@@ -42,9 +41,9 @@ export const authOptions: NextAuthOptions = {
         return {
           id: user.id,
           email: user.email,
-          name: user.name,
-          image: user.image,
-          emailVerified: user.emailVerified,
+          name: user.name || '',
+          image: user.image || null,
+          emailVerified: user.emailVerified || null,
         };
       },
     }),
@@ -59,9 +58,9 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.email = user.email;
-        token.name = user.name;
-        token.picture = user.image;
-        token.emailVerified = user.emailVerified;
+        token.name = user.name || '';
+        token.picture = user.image || null;
+        token.emailVerified = user.emailVerified || null;
       }
       return token;
     },
@@ -69,9 +68,9 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.id;
         session.user.email = token.email;
-        session.user.name = token.name;
-        session.user.image = token.picture;
-        session.user.emailVerified = token.emailVerified;
+        session.user.name = token.name || '';
+        session.user.image = token.picture || null;
+        session.user.emailVerified = token.emailVerified || null;
       }
       return session;
     },
