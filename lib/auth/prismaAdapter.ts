@@ -1,6 +1,6 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { PrismaClient } from "@prisma/client";
-import { Adapter } from "next-auth/adapters";
+import { Adapter, AdapterUser } from "next-auth/adapters";
 
 export function CustomPrismaAdapter(prisma: PrismaClient): Adapter {
   const adapter = PrismaAdapter(prisma);
@@ -10,7 +10,7 @@ export function CustomPrismaAdapter(prisma: PrismaClient): Adapter {
       const user = await prisma.user.create({
         data: {
           email: data.email,
-          name: data.name,
+          name: data.name ?? "",  // Ensure name is never null
           image: data.image,
           emailVerified: data.emailVerified,
         },
@@ -18,10 +18,10 @@ export function CustomPrismaAdapter(prisma: PrismaClient): Adapter {
       return {
         id: user.id,
         email: user.email,
-        name: user.name || null,
+        name: user.name,  // Remove null fallback
         image: user.image || null,
         emailVerified: user.emailVerified || null,
-      };
+      } as AdapterUser;
     },
     getUser: async (id) => {
       const user = await prisma.user.findUnique({ where: { id } });
@@ -29,10 +29,10 @@ export function CustomPrismaAdapter(prisma: PrismaClient): Adapter {
       return {
         id: user.id,
         email: user.email,
-        name: user.name || null,
+        name: user.name,  // Remove null fallback
         image: user.image || null,
         emailVerified: user.emailVerified || null,
-      };
+      } as AdapterUser;
     },
     getUserByEmail: async (email) => {
       const user = await prisma.user.findUnique({ where: { email } });
@@ -40,16 +40,16 @@ export function CustomPrismaAdapter(prisma: PrismaClient): Adapter {
       return {
         id: user.id,
         email: user.email,
-        name: user.name || null,
+        name: user.name,  // Remove null fallback
         image: user.image || null,
         emailVerified: user.emailVerified || null,
-      };
+      } as AdapterUser;
     },
     updateUser: async (data) => {
       const user = await prisma.user.update({
         where: { id: data.id },
         data: {
-          name: data.name,
+          name: data.name ?? "",  // Ensure name is never null
           email: data.email,
           image: data.image,
           emailVerified: data.emailVerified,
@@ -58,10 +58,10 @@ export function CustomPrismaAdapter(prisma: PrismaClient): Adapter {
       return {
         id: user.id,
         email: user.email,
-        name: user.name || null,
+        name: user.name,  // Remove null fallback
         image: user.image || null,
         emailVerified: user.emailVerified || null,
-      };
+      } as AdapterUser;
     },
   };
 }
