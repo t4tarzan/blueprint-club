@@ -50,8 +50,9 @@ export const authOptions: NextAuthOptions = {
   ],
   pages: {
     signIn: '/auth/signin',
-    signUp: '/auth/signup',
+    newUser: '/auth/signup',
     error: '/auth/error',
+    verifyRequest: '/auth/verify-request',
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -59,28 +60,22 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.email = user.email;
         token.name = user.name || '';
-        token.picture = user.image || null;
-        token.emailVerified = user.emailVerified || null;
+        token.image = user.image;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id;
-        session.user.email = token.email;
-        session.user.name = token.name || '';
-        session.user.image = token.picture || null;
-        session.user.emailVerified = token.emailVerified || null;
+        session.user.id = token.id as string;
+        session.user.email = token.email as string;
+        session.user.name = token.name as string;
+        session.user.image = token.image as string | null;
       }
       return session;
     },
     async redirect({ url, baseUrl }) {
-      if (url.startsWith(baseUrl)) {
-        if (url.includes('/auth/verify')) {
-          return url;
-        }
-        return `${baseUrl}/social`;
-      }
+      if (url.startsWith(baseUrl)) return url;
+      else if (url.startsWith('/')) return `${baseUrl}${url}`;
       return baseUrl;
     },
   },
@@ -89,7 +84,6 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   secret: process.env.NEXTAUTH_SECRET,
-  debug: process.env.NODE_ENV === 'development',
-};
+}
 
 export default NextAuth(authOptions);
