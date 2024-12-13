@@ -158,13 +158,13 @@ export function CustomPrismaAdapter(prisma: PrismaClient): Adapter {
     createVerificationToken: async (data) => {
       const verificationToken = await prisma.verificationToken.create({
         data: {
-          identifier: data.identifier,
+          email: data.identifier,
           token: data.token,
           expires: data.expires,
         },
       });
       return {
-        identifier: verificationToken.identifier,
+        identifier: verificationToken.email,
         token: verificationToken.token,
         expires: verificationToken.expires,
       } as VerificationToken;
@@ -173,14 +173,12 @@ export function CustomPrismaAdapter(prisma: PrismaClient): Adapter {
       try {
         const verificationToken = await prisma.verificationToken.delete({
           where: {
-            identifier_token: {
-              identifier: data.identifier,
-              token: data.token,
-            },
+            email: data.identifier,
+            token: data.token,
           },
         });
         return verificationToken ? {
-          identifier: verificationToken.identifier,
+          identifier: verificationToken.email,
           token: verificationToken.token,
           expires: verificationToken.expires,
         } as VerificationToken : null;
