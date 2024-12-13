@@ -1,6 +1,6 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { PrismaClient } from "@prisma/client";
-import { Adapter, AdapterUser, AdapterAccount } from "next-auth/adapters";
+import { Adapter, AdapterUser, VerificationToken } from "next-auth/adapters";
 
 export function CustomPrismaAdapter(prisma: PrismaClient): Adapter {
   return {
@@ -163,7 +163,11 @@ export function CustomPrismaAdapter(prisma: PrismaClient): Adapter {
           expires: data.expires,
         },
       });
-      return verificationToken;
+      return {
+        identifier: verificationToken.identifier,
+        token: verificationToken.token,
+        expires: verificationToken.expires,
+      } as VerificationToken;
     },
     useVerificationToken: async (data) => {
       try {
@@ -175,7 +179,11 @@ export function CustomPrismaAdapter(prisma: PrismaClient): Adapter {
             },
           },
         });
-        return verificationToken;
+        return verificationToken ? {
+          identifier: verificationToken.identifier,
+          token: verificationToken.token,
+          expires: verificationToken.expires,
+        } as VerificationToken : null;
       } catch {
         return null;
       }
