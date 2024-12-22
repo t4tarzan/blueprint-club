@@ -61,9 +61,9 @@ const JoinWithInvitation = ({
   const formik = useFormik({
     initialValues: {
       name: '',
-      email: '',
+      email: invitationDetails?.email || '',
       password: '',
-      sentViaEmail: invitation?.sentViaEmail || true,
+      sentViaEmail: invitationDetails?.sentViaEmail ?? true,
     },
     validationSchema: JoinUserSchema,
     enableReinitialize: true,

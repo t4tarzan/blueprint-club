@@ -7,6 +7,7 @@ interface InvitationResponse {
   email?: string;
   teamId?: string;
   role?: string;
+  sentViaEmail?: boolean;
 }
 
 interface UseInvitationReturn {
