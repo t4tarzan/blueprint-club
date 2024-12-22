@@ -50,7 +50,7 @@ const JoinWithInvitation = ({
   const router = useRouter();
   const { t } = useTranslation('common');
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
-  const { isLoading, error, invitation } = useInvitation();
+  const { isLoading, error: invitationError, invitation, invitationDetails } = useInvitation();
   const [recaptchaToken, setRecaptchaToken] = useState<string>('');
   const recaptchaRef = useRef<ReCAPTCHA>(null);
 
@@ -96,15 +96,19 @@ const JoinWithInvitation = ({
   });
 
   if (isLoading) {
-    return <Loading />;
+    return <Loading message={t('loading-invitation')} />;
   }
 
-  if (error || !invitation) {
-    return <Error message={error.message} />;
+  if (invitationError) {
+    return <Error message={invitationError} />;
+  }
+
+  if (!invitationDetails) {
+    return <Error message={t('invalid-invitation')} />;
   }
 
   return (
-    <WithLoadingAndError isLoading={isLoading} error={error}>
+    <WithLoadingAndError isLoading={isLoading} error={invitationError}>
       <form className="space-y-3" onSubmit={formik.handleSubmit}>
         <InputWithLabel
           type="text"
