@@ -130,17 +130,21 @@ const JoinWithInvitation = ({
           type="text"
           label={t('name')}
           name="name"
-          placeholder={t('your-name')}
+          placeholder={t('enter-name')}
           value={formik.values.name}
-          error={formik.errors.name}
           onChange={formik.handleChange}
+          error={formik.touched.name ? formik.errors.name : undefined}
         />
 
-        {invitation.sentViaEmail ? (
+        {invitationDetails?.sentViaEmail ? (
           <InputWithLabel
             type="email"
             label={t('email')}
-            value={invitation.email!}
+            name="email"
+            placeholder={t('enter-email')}
+            value={formik.values.email}
+            onChange={formik.handleChange}
+            error={formik.touched.email ? formik.errors.email : undefined}
             disabled
           />
         ) : (
@@ -148,10 +152,10 @@ const JoinWithInvitation = ({
             type="email"
             label={t('email')}
             name="email"
-            placeholder={t('email')}
+            placeholder={t('enter-email')}
             value={formik.values.email}
-            error={formik.errors.email}
             onChange={formik.handleChange}
+            error={formik.touched.email ? formik.errors.email : undefined}
           />
         )}
 
