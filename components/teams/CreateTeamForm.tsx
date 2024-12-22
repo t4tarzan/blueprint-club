@@ -1,9 +1,15 @@
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
+import type { ApiErrorResponse } from '../../types';
 
 interface CreateTeamFormProps {
   onSuccess?: () => void;
+}
+
+interface CreateTeamResponse {
+  slug: string;
+  [key: string]: unknown;
 }
 
 export function CreateTeamForm({ onSuccess }: CreateTeamFormProps) {
@@ -33,16 +39,28 @@ export function CreateTeamForm({ onSuccess }: CreateTeamFormProps) {
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to create team');
+        const errorResponse = data as ApiErrorResponse;
+        throw new Error(
+          errorResponse.error?.message || 
+          errorResponse.message || 
+          'Failed to create team'
+        );
       }
 
-      const team = await response.json();
+      const team = data as CreateTeamResponse;
+      
+      if (!team.slug) {
+        throw new Error('Invalid team response: missing slug');
+      }
+
       onSuccess?.();
       router.push(`/teams/${team.slug}/settings`);
     } catch (err) {
-      setError(err.message);
+      console.error('Error creating team:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create team');
     } finally {
       setIsLoading(false);
     }
@@ -99,17 +117,15 @@ export function CreateTeamForm({ onSuccess }: CreateTeamFormProps) {
         </div>
       )}
 
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          disabled={isLoading}
-          className={`inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-            isLoading ? 'opacity-50 cursor-not-allowed' : ''
-          }`}
-        >
-          {isLoading ? 'Creating...' : 'Create Team'}
-        </button>
-      </div>
+      <button
+        type="submit"
+        disabled={isLoading}
+        className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+          isLoading ? 'opacity-50 cursor-not-allowed' : ''
+        }`}
+      >
+        {isLoading ? 'Creating...' : 'Create Team'}
+      </button>
     </form>
   );
 }
