@@ -4,7 +4,7 @@ import { Loading } from './Loading';
 
 interface WithLoadingAndErrorProps {
   loading?: boolean;
-  error?: string;
+  error?: string | null;
   children: React.ReactNode;
 }
 

@@ -13,7 +13,7 @@ interface InvitationResponse {
 interface UseInvitationReturn {
   isLoading: boolean;
   error: string | null;
-  invitation: InvitationToken;
+  invitation: InvitationToken | null;
   invitationDetails: InvitationResponse | null;
 }
 
