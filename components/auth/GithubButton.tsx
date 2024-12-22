@@ -9,7 +9,7 @@ const GithubButton = () => {
 
   const handleSignIn = () => {
     signIn('github', {
-      callbackUrl: invitation ? `/invitations/${invitation.token}` : env.redirectIfAuthenticated,
+      callbackUrl: invitation ? `/invitations/${invitation}` : env.redirectIfAuthenticated,
     });
   };
 

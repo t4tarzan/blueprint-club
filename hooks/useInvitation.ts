@@ -1,4 +1,5 @@
 import { useRouter } from 'next/router';
+import type { InvitationToken } from '../types/invitation';
 
 const useInvitation = () => {
   const router = useRouter();
@@ -6,7 +7,7 @@ const useInvitation = () => {
 
   return {
     invitation: typeof invitation === 'string' ? invitation : null,
-  };
+  } as { invitation: InvitationToken | null };
 };
 
 export default useInvitation;

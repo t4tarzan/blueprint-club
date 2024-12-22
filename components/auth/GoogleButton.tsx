@@ -9,7 +9,7 @@ const GoogleButton = () => {
 
   const handleSignIn = () => {
     signIn('google', {
-      callbackUrl: invitation ? `/auth/join?invitation=${invitation}` : '/dashboard',
+      callbackUrl: invitation ? `/invitations/${invitation}` : env.redirectIfAuthenticated,
     });
   };
 
