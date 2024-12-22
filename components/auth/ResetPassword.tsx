@@ -40,27 +40,39 @@ const ResetPassword = () => {
     onSubmit: async (values) => {
       setSubmitting(true);
 
-      const response = await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: defaultHeaders,
-        body: JSON.stringify({
-          ...values,
-          token,
-        }),
-      });
+      try {
+        const response = await fetch('/api/auth/reset-password', {
+          method: 'POST',
+          headers: defaultHeaders,
+          body: JSON.stringify({
+            ...values,
+            token,
+          }),
+        });
 
-      const json = (await response.json()) as ApiResponse;
+        const json = await response.json();
 
-      setSubmitting(false);
+        if (!response.ok) {
+          // Type guard for error response
+          if (json && typeof json === 'object' && 'error' in json && 
+              typeof json.error === 'object' && json.error && 
+              'message' in json.error && typeof json.error.message === 'string') {
+            toast.error(json.error.message);
+          } else {
+            toast.error('Failed to reset password. Please try again.');
+          }
+          return;
+        }
 
-      if (!response.ok) {
-        toast.error(json.error.message);
-        return;
+        formik.resetForm();
+        toast.success(t('password-updated'));
+        router.push('/auth/login');
+      } catch (error) {
+        console.error('Reset password error:', error);
+        toast.error('An unexpected error occurred. Please try again.');
+      } finally {
+        setSubmitting(false);
       }
-
-      formik.resetForm();
-      toast.success(t('password-updated'));
-      router.push('/auth/login');
     },
   });
 
