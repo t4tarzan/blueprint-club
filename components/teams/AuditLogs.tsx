@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Team } from '../../types/team';
+import type { Team } from '../../types';
 import {
   CalendarIcon,
   ArrowPathIcon,
