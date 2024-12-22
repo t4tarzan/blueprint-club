@@ -28,6 +28,13 @@ interface JoinWithInvitationProps {
   recaptchaSiteKey: string | null;
 }
 
+interface ApiErrorResponse {
+  error: {
+    message: string;
+    code?: string;
+  };
+}
+
 const JoinUserSchema = Yup.object().shape({
   name: Yup.string().required().max(maxLengthPolicies.name),
   password: Yup.string()
@@ -70,28 +77,32 @@ const JoinWithInvitation = ({
     validateOnChange: false,
     validateOnBlur: false,
     onSubmit: async (values) => {
-      const response = await fetch('/api/auth/join', {
-        method: 'POST',
-        headers: defaultHeaders,
-        body: JSON.stringify({
-          ...values,
-          recaptchaToken,
-          inviteToken,
-        }),
-      });
+      try {
+        const response = await fetch('/api/auth/join', {
+          method: 'POST',
+          headers: defaultHeaders,
+          body: JSON.stringify({
+            ...values,
+            recaptchaToken,
+            inviteToken,
+          }),
+        });
 
-      const json = (await response.json()) as ApiResponse;
+        const json = (await response.json()) as ApiResponse | ApiErrorResponse;
 
-      recaptchaRef.current?.reset();
+        if (!response.ok) {
+          const errorMessage = 'error' in json
+            ? json.error.message
+            : 'Failed to join. Please try again.';
+          toast.error(errorMessage);
+          return;
+        }
 
-      if (!response.ok) {
-        toast.error(json.error.message);
-        return;
+        toast.success(t('successfully-joined'));
+        router.push(`/auth/login?token=${inviteToken}`);
+      } catch (error) {
+        toast.error('An unexpected error occurred. Please try again.');
       }
-
-      formik.resetForm();
-      toast.success(t('successfully-joined'));
-      router.push(`/auth/login?token=${inviteToken}`);
     },
   });
 

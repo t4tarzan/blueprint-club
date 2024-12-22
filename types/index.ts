@@ -57,3 +57,15 @@ export interface ApiResponse<T = any> {
   message?: string;
   status?: number;
 }
+
+export interface ApiResponse {
+  data?: any;
+  message?: string;
+}
+
+export interface ApiErrorResponse {
+  error: {
+    message: string;
+    code?: string;
+  };
+}
