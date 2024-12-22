@@ -124,7 +124,7 @@ const JoinWithInvitation = ({
   }
 
   return (
-    <WithLoadingAndError isLoading={isLoading} error={invitationError}>
+    <WithLoadingAndError loading={isLoading} error={invitationError}>
       <form className="space-y-3" onSubmit={formik.handleSubmit}>
         <InputWithLabel
           type="text"
