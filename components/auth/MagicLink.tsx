@@ -1,4 +1,4 @@
-import { InputWithLabel, Loading } from '@/components/shared';
+import { InputWithLabel } from '@/components/shared';
 import { maxLengthPolicies } from '@/lib/common';
 import env from '@/lib/env';
 import { useFormik } from 'formik';
@@ -22,10 +22,10 @@ const MagicLink = ({ csrfToken }: MagicLinkProps) => {
   const { t } = useTranslation('common');
   const { invitation } = useInvitation();
 
-  const params = invitation ? `?token=${invitation.token}` : '';
+  const params = invitation ? `?token=${invitation}` : '';
 
   const callbackUrl = invitation
-    ? `/invitations/${invitation.token}`
+    ? `/invitations/${invitation}`
     : env.redirectIfAuthenticated;
 
   const formik = useFormik({
@@ -36,29 +36,34 @@ const MagicLink = ({ csrfToken }: MagicLinkProps) => {
       email: Yup.string().required().email().max(maxLengthPolicies.email),
     }),
     onSubmit: async (values) => {
-      const response = await signIn('email', {
-        email: values.email,
-        csrfToken,
-        redirect: false,
-        callbackUrl,
-      });
+      try {
+        const response = await signIn('email', {
+          email: values.email,
+          csrfToken,
+          redirect: false,
+          callbackUrl,
+        });
 
-      formik.resetForm();
+        formik.resetForm();
 
-      if (response?.error) {
-        toast.error(t('email-login-error'));
-        return;
-      }
+        if (response?.error) {
+          toast.error(t('email-login-error'));
+          return;
+        }
 
-      if (response?.status === 200 && response?.ok) {
-        toast.success(t('email-login-success'));
-        return;
+        if (response?.status === 200 && response?.ok) {
+          toast.success(t('email-login-success'));
+          return;
+        }
+      } catch (error) {
+        console.error('Magic link error:', error);
+        toast.error('An unexpected error occurred');
       }
     },
   });
 
   if (status === 'loading') {
-    return <Loading />;
+    return <div>Loading...</div>;
   }
 
   if (status === 'authenticated') {
