@@ -121,8 +121,8 @@ const Join = ({ recaptchaSiteKey }: JoinProps) => {
         />
         <div className="absolute right-2 top-9">
           <TogglePasswordVisibility
-            isVisible={isPasswordVisible}
-            onToggle={handlePasswordVisibility}
+            isPasswordVisible={isPasswordVisible}
+            onTogglePasswordVisibility={handlePasswordVisibility}
           />
         </div>
       </div>

@@ -171,7 +171,7 @@ const JoinWithInvitation = ({
           />
           <TogglePasswordVisibility
             isPasswordVisible={isPasswordVisible}
-            handlePasswordVisibility={handlePasswordVisibility}
+            onTogglePasswordVisibility={handlePasswordVisibility}
           />
         </div>
         {recaptchaSiteKey && (
