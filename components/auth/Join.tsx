@@ -132,12 +132,12 @@ const Join = ({ recaptchaSiteKey }: JoinProps) => {
           id="agreeToTerms"
           name="agreeToTerms"
           type="checkbox"
-          className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
           checked={formik.values.agreeToTerms}
           onChange={formik.handleChange}
         />
         <label htmlFor="agreeToTerms" className="ml-2 block text-sm text-gray-900">
-          <AgreeMessage />
+          <AgreeMessage action={t('join')} />
         </label>
       </div>
       {formik.touched.agreeToTerms && formik.errors.agreeToTerms && (
