@@ -15,7 +15,7 @@ import ReCAPTCHA from 'react-google-recaptcha';
 import { maxLengthPolicies } from '@/lib/common';
 
 interface JoinProps {
-  recaptchaSiteKey?: string;
+  recaptchaSiteKey: string;
 }
 
 const JoinUserSchema = Yup.object().shape({
@@ -148,6 +148,7 @@ const Join = ({ recaptchaSiteKey }: JoinProps) => {
         <GoogleReCAPTCHA
           siteKey={recaptchaSiteKey}
           onChange={(token) => setRecaptchaToken(token || '')}
+          recaptchaRef={recaptchaRef}
         />
       )}
 
