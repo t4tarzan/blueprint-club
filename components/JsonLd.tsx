@@ -11,6 +11,24 @@ const JsonLd: FC<JsonLdProps> = ({ data }) => (
   />
 );
 
+interface CourseSchemaProps {
+  name: string;
+  description: string;
+  provider?: string;
+  courseCode?: string;
+  startDate?: string;
+  endDate?: string;
+  price?: number;
+  priceCurrency?: string;
+}
+
+interface FAQSchemaProps {
+  questions: Array<{
+    question: string;
+    answer: string;
+  }>;
+}
+
 export const OrganizationSchema = () => {
   const data = {
     '@context': 'https://schema.org',
@@ -60,7 +78,7 @@ export const OrganizationSchema = () => {
   return <JsonLd data={data} />;
 };
 
-export const CourseSchema = ({
+export const CourseSchema: FC<CourseSchemaProps> = ({
   name,
   description,
   provider = 'Blueprint Club',
@@ -95,7 +113,7 @@ export const CourseSchema = ({
   return <JsonLd data={data} />;
 };
 
-export const FAQSchema = ({ questions }) => {
+export const FAQSchema: FC<FAQSchemaProps> = ({ questions }) => {
   const data = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
