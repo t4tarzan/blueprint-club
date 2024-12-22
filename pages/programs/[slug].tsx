@@ -1,5 +1,4 @@
 import { useRouter } from 'next/router';
-import { motion } from 'framer-motion';
 import {
   AcademicCapIcon,
   UserGroupIcon,
@@ -11,10 +10,9 @@ import {
   CubeIcon,
   CommandLineIcon,
 } from '@heroicons/react/24/outline';
-import Navbar from '../../components/Navbar';
-import Hero from '../../components/Hero';
 import ProgramDetailCard from '../../components/ProgramDetailCard';
 import YouTubeEmbed from '../../components/YouTubeEmbed';
+import ImageGrid from '../../components/ImageGrid';
 
 type ProgramVariant = 'adults' | 'schooling' | 'afterschool' | 'music';
 
@@ -394,47 +392,24 @@ const programData: Record<string, Program> = {
   }
 };
 
-export default function ProgramPage() {
+const getProgramBySlug = (slug: string): Program | undefined => {
+  return programData[slug];
+};
+
+const ProgramPage = () => {
   const router = useRouter();
   const { slug } = router.query;
-  
-  if (!slug || typeof slug !== 'string' || !programData[slug]) {
-    return <div>Loading...</div>;
+  const program = getProgramBySlug(slug as string);
+
+  if (!program) {
+    return <div>Program not found</div>;
   }
 
-  const program = programData[slug] as Program;
-
   return (
-    <div className="min-h-screen bg-gray-100">
-      <Navbar />
-      <Hero
-        title={program.title}
-        subtitle={program.subtitle}
-        backgroundImage={program.heroImage}
-        showButton={false}
-      />
-      <div className="container mx-auto px-4 py-12">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <ProgramDetailCard
-            variant={program.variant}
-            title={program.title}
-            subtitle={program.subtitle}
-            description={program.description}
-            features={program.features}
-            phases={program.phases}
-            benefits={program.benefits}
-            schedule={program.schedule}
-            certifications={program.certifications}
-            showSlideshow={true}
-            overviewImage={program.overviewImage}
-            youtubeVideoId={program.youtubeVideoId}
-          />
-        </motion.div>
-      </div>
+    <div className="pt-24 min-h-screen bg-gray-50">
+      <ProgramDetailCard {...program} />
     </div>
   );
-}
+};
+
+export default ProgramPage;

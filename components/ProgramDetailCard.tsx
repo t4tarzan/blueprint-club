@@ -1,8 +1,8 @@
 import { ChevronRightIcon } from '@heroicons/react/24/solid';
 import { motion } from 'framer-motion';
 import React from 'react';
-import StagesSlideshow from './StagesSlideshow';
 import YouTubeEmbed from './YouTubeEmbed';
+import StagesSlideshow from './StagesSlideshow';
 
 interface Feature {
   title: string;
@@ -17,7 +17,7 @@ interface Phase {
 }
 
 interface ProgramDetailCardProps {
-  variant: 'adults' | 'schooling' | 'afterschool' | 'music';
+  variant: 'adults' | 'schooling' | 'afterschool' | 'academy';
   title: string;
   subtitle: string;
   description: string;
@@ -36,26 +36,69 @@ interface ProgramDetailCardProps {
 
 const variants = {
   adults: {
-    bg: 'from-blue-600 to-blue-800',
-    accent: 'bg-blue-500',
-    hover: 'hover:bg-blue-700',
-  },
-  schooling: {
     bg: 'from-purple-600 to-purple-800',
     accent: 'bg-purple-500',
     hover: 'hover:bg-purple-700',
+  },
+  schooling: {
+    bg: 'from-rose-600 to-rose-800',
+    accent: 'bg-rose-500',
+    hover: 'hover:bg-rose-700',
   },
   afterschool: {
     bg: 'from-teal-600 to-teal-800',
     accent: 'bg-teal-500',
     hover: 'hover:bg-teal-700',
   },
-  music: {
-    bg: 'from-rose-600 to-rose-800',
-    accent: 'bg-rose-500',
-    hover: 'hover:bg-rose-700',
+  academy: {
+    bg: 'from-blue-600 to-blue-800',
+    accent: 'bg-blue-500',
+    hover: 'hover:bg-blue-700',
   },
 };
+
+const schoolingStages = [
+  {
+    title: 'Overview BPC-Schooling',
+    imagePath: '/BPC Schooling Overview Images/Overview BPC-Schooling.png'
+  },
+  {
+    title: 'Global Groundbreakers',
+    imagePath: '/BPC Schooling Overview Images/Global Groundbreakers.png'
+  },
+  {
+    title: 'Jupiter\'s Guides',
+    imagePath: '/BPC Schooling Overview Images/Jupiter\'s Guides.png'
+  },
+  {
+    title: 'Martian Innovation',
+    imagePath: '/BPC Schooling Overview Images/Martian Innovation.png'
+  },
+  {
+    title: 'Mercurial Mastery',
+    imagePath: '/BPC Schooling Overview Images/Mercurial Mastery.png'
+  },
+  {
+    title: 'Neptunian Creators',
+    imagePath: '/BPC Schooling Overview Images/Neptunian Creators.png'
+  },
+  {
+    title: 'Saturnine Scholars',
+    imagePath: '/BPC Schooling Overview Images/Saturnine Scholars.png'
+  },
+  {
+    title: 'Solar Spark',
+    imagePath: '/BPC Schooling Overview Images/Solar Spark.png'
+  },
+  {
+    title: 'Uranian Visionaries',
+    imagePath: '/BPC Schooling Overview Images/Uranian Visionaries.png'
+  },
+  {
+    title: 'Venusian Harmony',
+    imagePath: '/BPC Schooling Overview Images/Venusian Harmony.png'
+  }
+];
 
 const ProgramDetailCard: React.FC<ProgramDetailCardProps> = ({
   variant,
@@ -80,129 +123,117 @@ const ProgramDetailCard: React.FC<ProgramDetailCardProps> = ({
       transition={{ duration: 0.5 }}
       className="w-full max-w-4xl mx-auto"
     >
-      {/* Header */}
-      <div className={`bg-gradient-to-r ${style.bg} p-8 rounded-t-2xl text-white`}>
-        <h2 className="text-3xl font-bold mb-2">{title}</h2>
-        <p className="text-lg opacity-90">{subtitle}</p>
-      </div>
-
       {/* Content */}
-      <div className="bg-white rounded-b-2xl shadow-xl">
+      <div className="bg-white rounded-2xl shadow-xl">
         {/* Description */}
         <div className="p-8 border-b">
+          <h2 className="text-3xl font-bold mb-2 text-gray-900">{title}</h2>
+          <p className="text-lg text-gray-600 mb-4">{subtitle}</p>
           <p className="text-gray-600 leading-relaxed">{description}</p>
         </div>
 
+        {/* Features */}
+        <div className="p-8 border-b">
+          <h3 className="text-xl font-semibold text-gray-900 mb-6">Key Features</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {features.map((feature, index) => (
+              <div key={index} className="flex space-x-4">
+                <div className={`${style.accent} p-2 rounded-lg h-10 w-10 flex-shrink-0`}>
+                  <feature.icon className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900">{feature.title}</h4>
+                  <p className="text-sm text-gray-500 mt-1">{feature.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Overview Image or Slideshow for Schooling */}
+        {variant === 'schooling' && (
+          <div className="p-8 border-b">
+            <h3 className="text-xl font-semibold text-gray-900 mb-6">Program Overview</h3>
+            <StagesSlideshow stages={schoolingStages} />
+          </div>
+        )}
+
         {/* Phases */}
         {phases && phases.length > 0 && (
-          <div className="p-8 border-t">
+          <div className="p-8 border-b">
             <h3 className="text-xl font-semibold text-gray-900 mb-6">Development Phases</h3>
-            <div className="space-y-4">
+            <div className="space-y-6">
               {phases.map((phase, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="flex items-start space-x-4"
-                >
-                  <div className={`flex-shrink-0 w-8 h-8 ${style.accent} rounded-full flex items-center justify-center text-white font-semibold`}>
+                <div key={index} className="flex items-start space-x-4">
+                  <div className={`${style.accent} rounded-full h-8 w-8 flex items-center justify-center text-white font-bold flex-shrink-0`}>
                     {index + 1}
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-900">{phase.title}</h4>
-                    <p className="text-sm text-gray-600">{phase.description}</p>
+                    <h4 className="font-medium text-gray-900">{phase.title}</h4>
+                    <p className="text-sm text-gray-500 mt-1">{phase.description}</p>
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* YouTube Video Section */}
-        {(variant === 'music' || variant === 'schooling') && youtubeVideoId && (
-          <div className="mt-12 mb-12">
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">
-              {variant === 'music' ? 'Featured Performance' : 'Program Overview'}
-            </h3>
+        {/* YouTube Video */}
+        {youtubeVideoId && (
+          <div className="p-8 border-b">
             <YouTubeEmbed videoId={youtubeVideoId} />
           </div>
         )}
 
-        {/* Features */}
-        <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          {features.map((feature, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="flex items-start space-x-4"
-            >
-              <div className={`p-2 ${style.accent} rounded-lg text-white`}>
-                {feature.icon && <feature.icon className="w-6 h-6" />}
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900 mb-1">{feature.title}</h3>
-                <p className="text-sm text-gray-600">{feature.description}</p>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Slideshow */}
-        {showSlideshow && overviewImage && phases && (
-          <div className="p-4 md:p-8 border-t">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Program Journey</h3>
-            <div className="relative w-full overflow-hidden">
-              <StagesSlideshow stages={phases} overviewImage={overviewImage} />
-            </div>
-          </div>
-        )}
-
         {/* Benefits */}
-        <div className="p-8 border-t bg-gray-50">
-          <h3 className="text-xl font-semibold text-gray-900 mb-6">Key Benefits</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-8 border-b">
+          <h3 className="text-xl font-semibold text-gray-900 mb-6">Program Benefits</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {benefits.map((benefit, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-                className="flex items-center space-x-2"
-              >
-                <ChevronRightIcon className={`w-5 h-5 text-${variant === 'adults' ? 'blue' : variant === 'schooling' ? 'purple' : variant === 'afterschool' ? 'teal' : 'rose'}-500`} />
-                <span className="text-gray-700">{benefit}</span>
-              </motion.div>
+              <div key={index} className="flex items-center space-x-2">
+                <ChevronRightIcon className={`h-5 w-5 ${style.accent} text-white rounded`} />
+                <span className="text-gray-600">{benefit}</span>
+              </div>
             ))}
           </div>
         </div>
 
         {/* Schedule */}
         {schedule && (
-          <div className="p-8 border-t">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">{schedule.title}</h3>
+          <div className="p-8 border-b">
+            <h3 className="text-xl font-semibold text-gray-900 mb-6">{schedule.title}</h3>
             <div className="space-y-2">
               {schedule.times.map((time, index) => (
-                <p key={index} className="text-gray-600">{time}</p>
+                <div key={index} className="flex items-center space-x-2">
+                  <ChevronRightIcon className={`h-5 w-5 ${style.accent} text-white rounded`} />
+                  <span className="text-gray-600">{time}</span>
+                </div>
               ))}
             </div>
           </div>
         )}
 
+        {/* Overview Image for non-Schooling */}
+        {variant !== 'schooling' && overviewImage && (
+          <div className="p-8 border-b">
+            <img
+              src={overviewImage}
+              alt="Program Overview"
+              className="w-full h-auto rounded-lg shadow-lg"
+            />
+          </div>
+        )}
+
         {/* Certifications */}
-        {certifications && (
-          <div className="p-8 border-t">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">Certifications</h3>
-            <div className="flex flex-wrap gap-2">
+        {certifications && certifications.length > 0 && (
+          <div className="p-8">
+            <h3 className="text-xl font-semibold text-gray-900 mb-6">Certifications</h3>
+            <div className="space-y-2">
               {certifications.map((cert, index) => (
-                <span
-                  key={index}
-                  className={`px-3 py-1 rounded-full text-sm ${style.accent} text-white`}
-                >
-                  {cert}
-                </span>
+                <div key={index} className="flex items-center space-x-2">
+                  <ChevronRightIcon className={`h-5 w-5 ${style.accent} text-white rounded`} />
+                  <span className="text-gray-600">{cert}</span>
+                </div>
               ))}
             </div>
           </div>

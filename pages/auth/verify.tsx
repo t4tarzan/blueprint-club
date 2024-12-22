@@ -1,81 +1,79 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { motion } from 'framer-motion';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 export default function VerifyEmail() {
-  const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
   const router = useRouter();
   const { token } = router.query;
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
-    if (token) {
-      verifyEmail();
-    }
-  }, [token]);
+    if (!token) return;
 
-  const verifyEmail = async () => {
-    try {
-      const response = await fetch(`/api/auth/verify?token=${token}`, {
-        method: 'GET',
-      });
+    const verifyEmail = async () => {
+      try {
+        const res = await fetch('/api/auth/verify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token }),
+        });
 
-      if (response.ok) {
-        setStatus('success');
-        setTimeout(() => {
-          router.push('/social');
-        }, 2000);
-      } else {
-        const data = await response.json();
-        console.error('Verification failed:', data);
+        const data = await res.json();
+
+        if (res.ok) {
+          setStatus('success');
+          setMessage('Email verified successfully! You can now log in.');
+          // Redirect to login page after 3 seconds
+          setTimeout(() => {
+            router.push('/auth/signin');
+          }, 3000);
+        } else {
+          setStatus('error');
+          setMessage(data.error || 'Verification failed');
+        }
+      } catch (error) {
         setStatus('error');
+        setMessage('Failed to verify email');
       }
-    } catch (error) {
-      console.error('Verification error:', error);
-      setStatus('error');
-    }
-  };
+    };
+
+    verifyEmail();
+  }, [token, router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 text-center">
-        {status === 'verifying' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-gray-600"
-          >
-            <h2 className="text-2xl font-bold mb-4">Verifying your email...</h2>
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FFC107] mx-auto"></div>
-          </motion.div>
-        )}
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          Email Verification
+        </h2>
+      </div>
 
-        {status === 'success' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-green-600"
-          >
-            <h2 className="text-2xl font-bold mb-4">Email verified successfully!</h2>
-            <p>Redirecting you to the social platform...</p>
-          </motion.div>
-        )}
-
-        {status === 'error' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-red-600"
-          >
-            <h2 className="text-2xl font-bold mb-4">Verification failed</h2>
-            <p>The verification link may have expired or is invalid.</p>
-            <button
-              onClick={() => router.push('/auth/signin')}
-              className="mt-4 bg-[#FFC107] text-white px-4 py-2 rounded-md hover:bg-[#FFB300]"
-            >
-              Back to Sign In
-            </button>
-          </motion.div>
-        )}
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          {status === 'loading' && (
+            <Alert>
+              <AlertTitle>Verifying</AlertTitle>
+              <AlertDescription>Please wait while we verify your email...</AlertDescription>
+            </Alert>
+          )}
+          
+          {status === 'success' && (
+            <Alert variant="success">
+              <AlertTitle>Success!</AlertTitle>
+              <AlertDescription>{message}</AlertDescription>
+            </Alert>
+          )}
+          
+          {status === 'error' && (
+            <Alert variant="destructive">
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{message}</AlertDescription>
+            </Alert>
+          )}
+        </div>
       </div>
     </div>
   );

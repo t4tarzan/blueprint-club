@@ -13,6 +13,7 @@ const ContactPage = () => {
         subtitle="Get in touch with us for any inquiries about our programs or to schedule a consultation"
         backgroundImage="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=2850&q=80"
         showButton={false}
+        accentWord="Us"
       />
 
       <motion.div

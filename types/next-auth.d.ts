@@ -1,5 +1,5 @@
 import 'next-auth';
-import { User } from '@prisma/client';
+import { User, Team, Role } from '@prisma/client';
 
 declare module 'next-auth' {
   interface Session {
@@ -9,6 +9,12 @@ declare module 'next-auth' {
       name: string | null;
       image: string | null;
       emailVerified: Date | null;
+      teams?: {
+        id: string;
+        name: string;
+        role: Role;
+      }[];
+      currentTeam?: Team;
     };
   }
 
@@ -18,6 +24,13 @@ declare module 'next-auth' {
     name: string | null;
     image: string | null;
     emailVerified: Date | null;
+    teams?: {
+      id: string;
+      name: string;
+      role: Role;
+    }[];
+    invalid_login_attempts?: number;
+    lockedAt?: Date | null;
   }
 }
 
@@ -26,7 +39,21 @@ declare module 'next-auth/jwt' {
     id: string;
     email: string;
     name: string | null;
-    picture: string | null;
+    image: string | null;
     emailVerified: Date | null;
+    teams?: {
+      id: string;
+      name: string;
+      role: Role;
+    }[];
+    saml?: boolean;
+    tenant?: string;
+  }
+}
+
+// Extend the built-in session type
+declare module 'next' {
+  interface NextApiRequest {
+    session?: Session;
   }
 }

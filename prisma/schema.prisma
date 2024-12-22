@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,23 +8,30 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  password      String?
-  emailVerified DateTime?
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  accounts      Account[]
-  sessions      Session[]
-  profile       Profile?
-  posts         Post[]
-  comments      Comment[]
-  likes         Like[]
-  followers     Follow[]  @relation("following")
-  following     Follow[]  @relation("follower")
+  id                     String       @id @default(cuid())
+  name                   String?
+  email                  String       @unique
+  password               String?
+  emailVerified          DateTime?
+  image                  String?
+  membershipTier         String       @default("FREE")
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+  invalid_login_attempts Int          @default(0)
+  lockedAt               DateTime?
+  accounts               Account[]
+  comments               Comment[]
+  following              Follow[]     @relation("follower")
+  followers              Follow[]     @relation("following")
+  invitations            Invitation[]
+  likes                  Like[]
+  posts                  Post[]
+  profile                Profile?
+  sessions               Session[]
+  teamMembers            TeamMember[]
+  subscriptions          Subscription[]
+  customerStripeId       String?      @unique
+  auditLogs              AuditLog[]
 }
 
 model Account {
@@ -36,17 +40,17 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Session {
@@ -55,62 +59,65 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model VerificationToken {
-  id         String   @id @default(cuid())
-  token      String   @unique
-  email      String   @unique
-  expires    DateTime
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  token     String   @unique
+  email     String
+  expires   DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([email, token])
 }
 
 model Profile {
-  id          String   @id @default(cuid())
-  bio         String?  @db.Text
-  location    String?
-  website     String?
-  occupation  String?
-  interests   String[]
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  bio        String?
+  location   String?
+  website    String?
+  occupation String?
+  interests  String[]
+  userId     String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Post {
   id        String    @id @default(cuid())
   title     String
-  content   String    @db.Text
+  content   String
   published Boolean   @default(false)
   authorId  String
-  author    User      @relation(fields: [authorId], references: [id])
-  comments  Comment[]
-  likes     Like[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  comments  Comment[]
+  likes     Like[]
+  author    User      @relation(fields: [authorId], references: [id])
 }
 
 model Comment {
   id        String   @id @default(cuid())
-  content   String   @db.Text
+  content   String
   postId    String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
   authorId  String
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
 }
 
 model Like {
   id        String   @id @default(cuid())
   postId    String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  authorId  String
   createdAt DateTime @default(now())
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
 
-  @@unique([postId, userId])
+  @@unique([postId, authorId])
 }
 
 model Follow {
@@ -122,4 +129,159 @@ model Follow {
   following   User     @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@unique([followerId, followingId])
+}
+
+model Team {
+  id            String       @id @default(cuid())
+  name          String
+  slug          String       @unique
+  domain        String?
+  description   String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  apiKeys       ApiKey[]
+  invitations   Invitation[]
+  members       TeamMember[]
+  auditLogs     AuditLog[]
+  webhooks      Webhook[]
+  samlConfig    Json?        // SAML SSO configuration
+  scimToken     String?      @unique // SCIM provisioning token
+
+  @@index([slug])
+  @@index([domain])
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  teamId    String
+  userId    String
+  role      Role     @default(MEMBER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([userId])
+}
+
+model Invitation {
+  id        String   @id @default(cuid())
+  email     String
+  teamId    String
+  role      Role     @default(MEMBER)
+  token     String   @unique
+  expires   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [email], references: [email])
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, email])
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  name       String
+  key        String    @unique
+  teamId     String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  lastUsedAt DateTime?
+  team       Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+}
+
+model Subscription {
+  id               String          @id @default(cuid())
+  userId           String
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripeId         String          @unique
+  status           SubscriptionStatus
+  priceId          String
+  quantity         Int
+  cancelAtPeriodEnd Boolean        @default(false)
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  usageRecords      UsageRecord[]
+
+  @@index([userId])
+}
+
+model UsageRecord {
+  id             String       @id @default(cuid())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  quantity       Int
+  timestamp      DateTime     @default(now())
+  description    String?
+
+  @@index([subscriptionId])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String
+  actorId     String
+  actorEmail  String?
+  targetType  String
+  targetId    String
+  teamId      String?
+  metadata    Json?
+  timestamp   DateTime @default(now())
+  actor       User     @relation(fields: [actorId], references: [id])
+  team        Team?    @relation(fields: [teamId], references: [id])
+
+  @@index([actorId])
+  @@index([teamId])
+  @@index([timestamp])
+  @@index([action])
+  @@index([targetType])
+}
+
+model Webhook {
+  id          String            @id @default(cuid())
+  teamId      String
+  url         String
+  description String?
+  events      String[]
+  secret      String
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  team        Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  deliveries  WebhookDelivery[]
+
+  @@index([teamId])
+}
+
+model WebhookDelivery {
+  id         String   @id @default(cuid())
+  webhookId  String
+  event      String
+  payload    Json
+  statusCode Int
+  success    Boolean
+  error      String?
+  createdAt  DateTime @default(now())
+  webhook    Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId])
+  @@index([createdAt])
+  @@index([success])
+}
+
+enum Role {
+  ADMIN
+  OWNER
+  MEMBER
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  TRIALING
 }

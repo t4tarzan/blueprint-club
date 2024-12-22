@@ -1,183 +1,99 @@
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
-import Image from 'next/image';
-import { useState, useEffect } from 'react';
-import LoadingSpinner from './LoadingSpinner';
 
 interface Stage {
   title: string;
-  description: string;
-  image?: string;
+  imagePath: string;
 }
 
 interface StagesSlideshowProps {
   stages: Stage[];
-  overviewImage: string;
+  autoplayInterval?: number;
 }
 
-const StagesSlideshow: React.FC<StagesSlideshowProps> = ({ stages, overviewImage }) => {
+export default function StagesSlideshow({ stages, autoplayInterval = 5000 }: StagesSlideshowProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [direction, setDirection] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadingProgress, setLoadingProgress] = useState(0);
-  const [preloadedImages, setPreloadedImages] = useState<Set<string>>(new Set());
+  const [isAutoplay, setIsAutoplay] = useState(true);
 
-  const allSlides = [
-    { title: 'Overview', description: '', image: overviewImage },
-    ...stages
-  ];
-
-  // Initial preload of all images
   useEffect(() => {
-    const totalImages = allSlides.filter(slide => slide.image).length;
-    let loadedImages = 0;
+    if (!isAutoplay) return;
 
-    const preloadImage = (src: string) => {
-      if (!src || preloadedImages.has(src)) {
-        loadedImages++;
-        setLoadingProgress((loadedImages / totalImages) * 100);
-        return;
-      }
-      
-      const img = document.createElement('img');
-      img.src = src;
-      img.onload = () => {
-        loadedImages++;
-        setLoadingProgress((loadedImages / totalImages) * 100);
-        setPreloadedImages(prev => {
-          const newSet = new Set(prev);
-          newSet.add(src);
-          return newSet;
-        });
-        if (loadedImages === totalImages) {
-          setIsLoading(false);
-        }
-      };
-      img.onerror = () => {
-        loadedImages++;
-        setLoadingProgress((loadedImages / totalImages) * 100);
-      };
-    };
+    const interval = setInterval(() => {
+      setCurrentIndex((current) => (current + 1) % stages.length);
+    }, autoplayInterval);
 
-    // Preload all images
-    allSlides.forEach(slide => {
-      if (slide.image) {
-        preloadImage(slide.image);
-      }
-    });
-  }, [allSlides]); // Only run on mount
+    return () => clearInterval(interval);
+  }, [isAutoplay, stages.length, autoplayInterval]);
 
-  const slideVariants = {
-    enter: (direction: number) => ({
-      x: direction > 0 ? 1000 : -1000,
-      opacity: 0
-    }),
-    center: {
-      zIndex: 1,
-      x: 0,
-      opacity: 1
-    },
-    exit: (direction: number) => ({
-      zIndex: 0,
-      x: direction < 0 ? 1000 : -1000,
-      opacity: 0
-    })
+  const handlePrevious = () => {
+    setIsAutoplay(false);
+    setCurrentIndex((current) => (current - 1 + stages.length) % stages.length);
   };
 
-  const paginate = (newDirection: number) => {
-    setDirection(newDirection);
-    setCurrentIndex((prevIndex) => {
-      let nextIndex = prevIndex + newDirection;
-      if (nextIndex < 0) nextIndex = allSlides.length - 1;
-      if (nextIndex >= allSlides.length) nextIndex = 0;
-      return nextIndex;
-    });
+  const handleNext = () => {
+    setIsAutoplay(false);
+    setCurrentIndex((current) => (current + 1) % stages.length);
   };
 
   return (
-    <div className="relative w-full aspect-[16/10] max-w-4xl bg-gray-900 rounded-xl mx-auto overflow-hidden">
-      <div className="absolute inset-0 flex items-center justify-center">
-        {isLoading ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
-            <LoadingSpinner progress={loadingProgress} />
-          </div>
-        ) : (
-          <AnimatePresence initial={false} custom={direction}>
+    <div className="relative w-full max-w-4xl mx-auto overflow-hidden rounded-2xl shadow-xl border border-gray-200">
+      {/* Fixed aspect ratio container - using 4:3 ratio for more height */}
+      <div className="relative w-full" style={{ paddingBottom: '75%' }}> {/* 4:3 aspect ratio */}
+        <div className="absolute inset-0 bg-gray-100">
+          <AnimatePresence mode="wait">
             <motion.div
               key={currentIndex}
-              custom={direction}
-              variants={slideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={{
-                x: { type: "spring", stiffness: 300, damping: 30 },
-                opacity: { duration: 0.2 }
-              }}
-              className="absolute w-full h-full"
+              initial={{ opacity: 0, x: 100 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -100 }}
+              transition={{ duration: 0.5 }}
+              className="relative w-full h-full"
             >
-              <div className="relative w-full h-full">
-                {allSlides[currentIndex].image && (
-                  <Image
-                    src={allSlides[currentIndex].image || ''}
-                    alt={allSlides[currentIndex].title}
-                    fill
-                    priority={currentIndex === 0}
-                    quality={75}
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 800px"
-                    className="object-contain"
-                    loading={currentIndex < 3 ? "eager" : "lazy"}
-                    placeholder="blur"
-                    blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDABQODxIPDRQSEBIXFRQdHx0fHRsdHSIeHx8dIigjJCUmJSQkIiYnLC4sJiYnNTU4ODU+QkJCQjpDRUs5Rk1LS0v/2wBDAR"
-                  />
-                )}
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-black bg-opacity-50 text-white">
-                  <h3 className="text-xl font-semibold mb-2">{allSlides[currentIndex].title}</h3>
-                  <p className="text-sm opacity-90 line-clamp-2 md:line-clamp-none">{allSlides[currentIndex].description}</p>
-                </div>
+              <img
+                src={stages[currentIndex].imagePath}
+                alt={stages[currentIndex].title}
+                className="absolute inset-0 w-full h-full object-contain bg-white" // Changed to object-contain
+              />
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 to-transparent">
+                <h3 className="text-white text-xl font-semibold">
+                  {stages[currentIndex].title}
+                </h3>
               </div>
             </motion.div>
           </AnimatePresence>
-        )}
-      </div>
 
-      {!isLoading && (
-        <>
-          {/* Navigation buttons */}
+          {/* Navigation Buttons */}
           <button
-            className="absolute left-2 md:left-4 top-1/2 transform -translate-y-1/2 p-1 md:p-2 rounded-full bg-black bg-opacity-50 hover:bg-opacity-70 transition-all z-20"
-            onClick={() => paginate(-1)}
-            aria-label="Previous slide"
+            onClick={handlePrevious}
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors duration-200"
           >
-            <ChevronLeftIcon className="w-4 h-4 md:w-6 md:h-6 text-white" />
+            <ChevronLeftIcon className="h-6 w-6" />
           </button>
           <button
-            className="absolute right-2 md:right-4 top-1/2 transform -translate-y-1/2 p-1 md:p-2 rounded-full bg-black bg-opacity-50 hover:bg-opacity-70 transition-all z-20"
-            onClick={() => paginate(1)}
-            aria-label="Next slide"
+            onClick={handleNext}
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-colors duration-200"
           >
-            <ChevronRightIcon className="w-4 h-4 md:w-6 md:h-6 text-white" />
+            <ChevronRightIcon className="h-6 w-6" />
           </button>
 
-          {/* Progress dots */}
-          <div className="absolute bottom-20 left-0 right-0 flex justify-center gap-1 md:gap-2 z-20">
-            {allSlides.map((_, index) => (
+          {/* Dots Navigation */}
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+            {stages.map((_, index) => (
               <button
                 key={index}
-                className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full transition-all ${
-                  index === currentIndex ? 'bg-white scale-125' : 'bg-white bg-opacity-50'
-                }`}
                 onClick={() => {
-                  setDirection(index > currentIndex ? 1 : -1);
+                  setIsAutoplay(false);
                   setCurrentIndex(index);
                 }}
+                className={`w-2 h-2 rounded-full transition-colors duration-200 ${
+                  index === currentIndex ? 'bg-white' : 'bg-white/50'
+                }`}
               />
             ))}
           </div>
-        </>
-      )}
+        </div>
+      </div>
     </div>
   );
-};
-
-export default StagesSlideshow;
+}

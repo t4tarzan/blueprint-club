@@ -1,0 +1,71 @@
+{
+  "title": "Webhooks",
+  "description": "Configure webhooks to receive notifications about events in your team",
+  "addWebhook": "Add Webhook",
+  "noWebhooks": "No webhooks configured yet",
+  "webhookCreated": "Webhook created successfully",
+  "webhookUpdated": "Webhook updated successfully",
+  "webhookDeleted": "Webhook deleted successfully",
+  "deleteConfirmation": "Are you sure you want to delete this webhook?",
+  "deliveryHistory": "Delivery History",
+  "noDeliveries": "No deliveries yet",
+  "payload": "Payload",
+  "error": "Error",
+  "subscribedEvents": "Subscribed Events",
+  "viewDeliveries": "View Deliveries",
+  "form": {
+    "url": "Webhook URL",
+    "urlDescription": "The URL where webhook events will be sent",
+    "description": "Description",
+    "descriptionPlaceholder": "Optional description for this webhook",
+    "events": "Events",
+    "active": "Active",
+    "activeDescription": "When active, webhook events will be sent to the specified URL"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "events": {
+    "team": "Team Events",
+    "team.created": "Team Created",
+    "team.updated": "Team Updated",
+    "team.deleted": "Team Deleted",
+    "member.invited": "Member Invited",
+    "member.added": "Member Added",
+    "member.updated": "Member Updated",
+    "member.removed": "Member Removed",
+
+    "sso": "SSO Events",
+    "sso.configured": "SSO Configured",
+    "sso.updated": "SSO Updated",
+    "sso.deleted": "SSO Deleted",
+    "sso.login.success": "SSO Login Success",
+    "sso.login.failed": "SSO Login Failed",
+
+    "scim": "SCIM Events",
+    "scim.enabled": "SCIM Enabled",
+    "scim.disabled": "SCIM Disabled",
+    "scim.user.created": "SCIM User Created",
+    "scim.user.updated": "SCIM User Updated",
+    "scim.user.deleted": "SCIM User Deleted",
+    "scim.group.created": "SCIM Group Created",
+    "scim.group.updated": "SCIM Group Updated",
+    "scim.group.deleted": "SCIM Group Deleted",
+
+    "subscription": "Subscription Events",
+    "subscription.created": "Subscription Created",
+    "subscription.updated": "Subscription Updated",
+    "subscription.cancelled": "Subscription Cancelled",
+    "subscription.payment.succeeded": "Payment Succeeded",
+    "subscription.payment.failed": "Payment Failed",
+
+    "security": "Security Events",
+    "security.api_key.created": "API Key Created",
+    "security.api_key.deleted": "API Key Deleted",
+    "security.login.success": "Login Success",
+    "security.login.failed": "Login Failed",
+    "security.account.locked": "Account Locked",
+    "security.account.unlocked": "Account Unlocked"
+  }
+}

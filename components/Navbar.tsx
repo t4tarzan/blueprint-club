@@ -21,7 +21,7 @@ const Navbar = () => {
   }, []);
 
   const isActive = (path: string) => {
-    return router.asPath === path ? 'text-[#FFC107]' : 'text-[#424242] hover:text-[#FFC107]';
+    return router.asPath === path ? 'text-[#FFC107]' : 'text-white hover:text-[#FFC107]';
   };
 
   return (
@@ -29,7 +29,9 @@ const Navbar = () => {
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       className={`fixed w-full z-50 transition-all duration-300 ${
-        scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm py-4' : 'bg-transparent py-6'
+        scrolled 
+          ? 'bg-gradient-to-r from-black/80 to-gray-900/80 backdrop-blur-md shadow-lg py-4' 
+          : 'bg-transparent py-6'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -40,7 +42,7 @@ const Navbar = () => {
             transition={{ delay: 0.2 }}
             className="flex items-center"
           >
-            <Link href="/" className="text-2xl font-bold text-[#424242]">
+            <Link href="/" className="text-2xl font-bold text-white">
               Blueprint<span className="text-[#FFC107]">Club</span>
             </Link>
           </motion.div>
@@ -51,16 +53,19 @@ const Navbar = () => {
             transition={{ delay: 0.3 }}
             className="hidden md:flex items-center space-x-8"
           >
-            <Link href="/" className={`nav-link ${isActive('/')}`}>
+            <Link href="/" className={`nav-link ${isActive('/')} text-white hover:text-[#FFC107]`}>
               Home
             </Link>
-            <Link href="/#programs" className={`nav-link ${isActive('/#programs')}`}>
+            <Link 
+              href="/#programs" 
+              className={`nav-link ${isActive('/#programs')} text-white hover:text-[#FFC107]`}
+            >
               Programs
             </Link>
-            <Link href="/about" className={`nav-link ${isActive('/about')}`}>
+            <Link href="/about" className={`nav-link ${isActive('/about')} text-white hover:text-[#FFC107]`}>
               About
             </Link>
-            <Link href="/contact" className={`nav-link ${isActive('/contact')}`}>
+            <Link href="/contact" className={`nav-link ${isActive('/contact')} text-white hover:text-[#FFC107]`}>
               Contact
             </Link>
           </motion.div>
@@ -90,21 +95,21 @@ const Navbar = () => {
                       {session.user?.name?.[0] || 'U'}
                     </div>
                   )}
-                  <span className="text-[#424242]">{session.user?.name}</span>
+                  <span className="text-white">{session.user?.name}</span>
                 </button>
 
                 {isMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                  <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-gradient-to-r from-black/90 to-gray-900/90 backdrop-blur-md ring-1 ring-black ring-opacity-5">
                     <div className="py-1">
                       <Link
                         href="/profile"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="block px-4 py-2 text-sm text-white hover:text-[#FFC107]"
                       >
                         Profile
                       </Link>
                       <button
                         onClick={() => signOut()}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="block w-full text-left px-4 py-2 text-sm text-white hover:text-[#FFC107]"
                       >
                         Sign out
                       </button>
@@ -116,7 +121,7 @@ const Navbar = () => {
               <>
                 <Link
                   href="/auth/signin"
-                  className="text-[#424242] hover:text-[#FFC107]"
+                  className="text-white hover:text-[#FFC107]"
                 >
                   Sign in
                 </Link>
@@ -134,7 +139,7 @@ const Navbar = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="md:hidden text-[#424242] hover:text-[#FFC107]"
+            className="md:hidden text-white hover:text-[#FFC107]"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             <svg
@@ -152,29 +157,29 @@ const Navbar = () => {
 
           {/* Mobile menu */}
           {isMenuOpen && (
-            <div className="absolute top-full left-0 w-full bg-white shadow-lg md:hidden">
+            <div className="absolute top-full left-0 w-full bg-gradient-to-r from-black/90 to-gray-900/90 backdrop-blur-md shadow-lg md:hidden">
               <div className="px-2 pt-2 pb-3 space-y-1">
                 <Link
                   href="/"
-                  className="block px-3 py-2 text-[#424242] hover:text-[#FFC107]"
+                  className="block px-3 py-2 text-white hover:text-[#FFC107]"
                 >
                   Home
                 </Link>
                 <Link
                   href="/#programs"
-                  className="block px-3 py-2 text-[#424242] hover:text-[#FFC107]"
+                  className="block px-3 py-2 text-white hover:text-[#FFC107]"
                 >
                   Programs
                 </Link>
                 <Link
                   href="/about"
-                  className="block px-3 py-2 text-[#424242] hover:text-[#FFC107]"
+                  className="block px-3 py-2 text-white hover:text-[#FFC107]"
                 >
                   About
                 </Link>
                 <Link
                   href="/contact"
-                  className="block px-3 py-2 text-[#424242] hover:text-[#FFC107]"
+                  className="block px-3 py-2 text-white hover:text-[#FFC107]"
                 >
                   Contact
                 </Link>
@@ -182,7 +187,7 @@ const Navbar = () => {
                   <>
                     <Link
                       href="/auth/signin"
-                      className="block px-3 py-2 text-[#424242] hover:text-[#FFC107]"
+                      className="block px-3 py-2 text-white hover:text-[#FFC107]"
                     >
                       Sign in
                     </Link>

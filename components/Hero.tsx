@@ -74,7 +74,7 @@ const Hero = ({
             >
               <a
                 href={buttonLink}
-                className="button-primary"
+                className="inline-block px-8 py-3 text-lg font-semibold text-white bg-[#FFC107] hover:bg-[#FFB300] rounded-full transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
               >
                 {buttonText}
               </a>

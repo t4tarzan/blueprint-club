@@ -1,0 +1,36 @@
+{
+  "auth": {
+    "join": {
+      "title": "Create your account",
+      "name": "Name",
+      "email": "Email",
+      "password": "Password",
+      "team": "Team Name",
+      "submit": "Create Account",
+      "login": "Already have an account? Sign in",
+      "success": "Successfully joined!"
+    },
+    "login": {
+      "title": "Sign in to your account",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "forgotPassword": "Forgot password?",
+      "join": "Don't have an account? Sign up",
+      "success": "Signed in successfully"
+    },
+    "github": "Continue with GitHub",
+    "google": "Continue with Google"
+  },
+  "agree-message-part": "By clicking {{button}}, you agree to our",
+  "terms": "Terms of Service",
+  "privacy": "Privacy Policy",
+  "and": "and",
+  "errors": {
+    "required": "{{field}} is required",
+    "email": "Invalid email address",
+    "minLength": "{{field}} must be at least {{min}} characters",
+    "maxLength": "{{field}} must be at most {{max}} characters",
+    "invalidTeamName": "Team name must be at least 3 characters"
+  }
+}

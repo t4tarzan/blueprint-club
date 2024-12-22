@@ -1,3 +1,5 @@
+const { i18n } = require('./next-i18next.config');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -7,6 +9,7 @@ const nextConfig = {
   env: {
     NEXTAUTH_URL: 'http://localhost:3000',
   },
+  i18n,
   swcMinify: true,
 }
 

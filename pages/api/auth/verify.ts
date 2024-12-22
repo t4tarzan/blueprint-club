@@ -1,50 +1,61 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { prisma } from '../../../lib/prisma';
-import { compare } from 'bcryptjs';
+import { prisma } from '@/lib/prisma';
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ message: 'Method not allowed' });
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const { token } = req.query;
+    // Get token from query params (GET) or request body (POST)
+    const token = req.method === 'GET' 
+      ? req.query.token 
+      : req.body.token;
 
     if (!token || typeof token !== 'string') {
-      return res.status(400).json({ message: 'Invalid token' });
+      return res.status(400).json({ error: 'Invalid token' });
     }
 
-    // Find verification token
-    const verificationToken = await prisma.verificationToken.findFirst({
-      where: {
-        token: token,
-        expires: { gt: new Date() }
-      }
+    // Find the verification token
+    const verificationToken = await prisma.verificationToken.findUnique({
+      where: { token },
     });
 
     if (!verificationToken) {
-      return res.status(400).json({ message: 'Invalid or expired token' });
+      return res.status(400).json({ error: 'Invalid or expired token' });
     }
 
-    // Update user
+    // Check if token is expired
+    if (verificationToken.expires < new Date()) {
+      await prisma.verificationToken.delete({
+        where: { token },
+      });
+      return res.status(400).json({ error: 'Token has expired' });
+    }
+
+    // Update user's email verification status
     await prisma.user.update({
       where: { email: verificationToken.email },
-      data: { 
-        emailVerified: new Date(),
-      }
+      data: { emailVerified: new Date() },
     });
 
-    // Delete the used token
+    // Delete the verification token
     await prisma.verificationToken.delete({
-      where: { id: verificationToken.id }
+      where: { token },
     });
 
-    return res.status(200).json({ message: 'Email verified successfully' });
+    if (req.method === 'GET') {
+      // Redirect to success page for GET requests
+      res.redirect(307, '/auth/verify-success');
+    } else {
+      // Return JSON response for POST requests
+      return res.status(200).json({ 
+        success: true,
+        message: 'Email verified successfully'
+      });
+    }
   } catch (error) {
     console.error('Verification error:', error);
-    return res.status(500).json({ message: 'Error verifying email' });
+    return res.status(500).json({ error: 'Failed to verify email' });
   }
 }

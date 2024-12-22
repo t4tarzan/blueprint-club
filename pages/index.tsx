@@ -101,7 +101,7 @@ const HomePage = () => {
                 "Vocational Qualifications in Digital Arts",
                 "Weekend Music Sessions & Collaborations"
               ]}
-              slug="rsl-program"
+              slug="white-noise-academy"
             />
           </div>
         </div>
