@@ -3,14 +3,14 @@ import ReCAPTCHA from 'react-google-recaptcha';
 
 interface GoogleReCAPTCHAProps {
   siteKey: string;
-  onChange?: (token: string | null) => void;
+  onChange: (token: string | null) => void;
   recaptchaRef?: React.RefObject<ReCAPTCHA>;
 }
 
 const GoogleReCAPTCHA: React.FC<GoogleReCAPTCHAProps> = ({ 
-  siteKey, 
+  siteKey,
   onChange,
-  recaptchaRef 
+  recaptchaRef
 }) => {
   if (!siteKey) return null;
 

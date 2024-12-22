@@ -164,21 +164,24 @@ const JoinWithInvitation = ({
             type={isPasswordVisible ? 'text' : 'password'}
             label={t('password')}
             name="password"
-            placeholder={t('password')}
+            placeholder={t('enter-password')}
             value={formik.values.password}
-            error={formik.errors.password}
             onChange={formik.handleChange}
+            error={formik.touched.password ? formik.errors.password : undefined}
           />
           <TogglePasswordVisibility
             isPasswordVisible={isPasswordVisible}
             handlePasswordVisibility={handlePasswordVisibility}
           />
         </div>
-        <GoogleReCAPTCHA
-          recaptchaRef={recaptchaRef}
-          onChange={setRecaptchaToken}
-          siteKey={recaptchaSiteKey}
-        />
+        {recaptchaSiteKey && (
+          <GoogleReCAPTCHA
+            siteKey={recaptchaSiteKey}
+            onChange={setRecaptchaToken}
+            recaptchaRef={recaptchaRef}
+          />
+        )}
+
         <div className="space-y-3">
           <Button
             type="submit"
