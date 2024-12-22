@@ -58,11 +58,15 @@ const JoinWithInvitation = ({
   const { t } = useTranslation('common');
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
   const { isLoading, error: invitationError, invitation, invitationDetails } = useInvitation();
-  const [recaptchaToken, setRecaptchaToken] = useState<string>('');
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
   const recaptchaRef = useRef<ReCAPTCHA>(null);
 
   const handlePasswordVisibility = () => {
     setIsPasswordVisible((prev) => !prev);
+  };
+
+  const handleRecaptchaChange = (token: string | null) => {
+    setRecaptchaToken(token);
   };
 
   const formik = useFormik({
@@ -177,7 +181,7 @@ const JoinWithInvitation = ({
         {recaptchaSiteKey && (
           <GoogleReCAPTCHA
             siteKey={recaptchaSiteKey}
-            onChange={setRecaptchaToken}
+            onChange={handleRecaptchaChange}
             recaptchaRef={recaptchaRef}
           />
         )}

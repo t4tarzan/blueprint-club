@@ -2,7 +2,7 @@ import React from 'react';
 import ReCAPTCHA from 'react-google-recaptcha';
 
 interface GoogleReCAPTCHAProps {
-  siteKey: string;
+  siteKey: string | null;
   onChange: (token: string | null) => void;
   recaptchaRef?: React.RefObject<ReCAPTCHA>;
 }
