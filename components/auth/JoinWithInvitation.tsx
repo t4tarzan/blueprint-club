@@ -88,19 +88,24 @@ const JoinWithInvitation = ({
           }),
         });
 
-        const json = (await response.json()) as ApiResponse | ApiErrorResponse;
+        const json = await response.json();
 
         if (!response.ok) {
-          const errorMessage = 'error' in json
-            ? json.error.message
-            : 'Failed to join. Please try again.';
-          toast.error(errorMessage);
+          // Type guard for error response
+          if (json && typeof json === 'object' && 'error' in json && 
+              typeof json.error === 'object' && json.error && 
+              'message' in json.error && typeof json.error.message === 'string') {
+            toast.error(json.error.message);
+          } else {
+            toast.error('Failed to join. Please try again.');
+          }
           return;
         }
 
         toast.success(t('successfully-joined'));
-        router.push(`/auth/login?token=${inviteToken}`);
+        router.push('/auth/signin');
       } catch (error) {
+        console.error('Join error:', error);
         toast.error('An unexpected error occurred. Please try again.');
       }
     },
