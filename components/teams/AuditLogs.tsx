@@ -12,6 +12,10 @@ interface AuditLogsProps {
   team: Team;
 }
 
+interface AuditLogMetadata {
+  [key: string]: unknown;
+}
+
 interface AuditLog {
   id: string;
   action: AuditLogAction;
@@ -19,7 +23,7 @@ interface AuditLog {
   status: AuditLogStatus;
   ipAddress?: string;
   userAgent?: string;
-  metadata?: any;
+  metadata?: AuditLogMetadata;
   createdAt: string;
   user?: {
     name: string;
@@ -62,14 +66,21 @@ export function AuditLogs({ team }: AuditLogsProps) {
       );
 
       if (!response.ok) {
-        throw new Error('Failed to fetch audit logs');
+        const json = await response.json();
+        throw new Error(json.error?.message || 'Failed to fetch audit logs');
       }
 
       const data = await response.json();
+      
+      if (!data || !Array.isArray(data.logs) || !data.pagination) {
+        throw new Error('Invalid response format');
+      }
+      
       setLogs(data.logs);
       setPagination(data.pagination);
     } catch (error) {
-      setError('Failed to load audit logs');
+      const message = error instanceof Error ? error.message : 'Failed to load audit logs';
+      setError(message);
       console.error('Error fetching audit logs:', error);
     } finally {
       setIsLoading(false);
@@ -79,8 +90,26 @@ export function AuditLogs({ team }: AuditLogsProps) {
   const exportLogs = async () => {
     try {
       const queryParams = new URLSearchParams(filters);
-      window.location.href = `/api/teams/${team.id}/audit-logs/export?${queryParams}`;
+      const exportUrl = `/api/teams/${team.id}/audit-logs/export?${queryParams}`;
+      
+      const response = await fetch(exportUrl);
+      
+      if (!response.ok) {
+        const json = await response.json();
+        throw new Error(json.error?.message || 'Failed to export audit logs');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `audit-logs-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to export audit logs';
       console.error('Error exporting audit logs:', error);
     }
   };
@@ -89,11 +118,11 @@ export function AuditLogs({ team }: AuditLogsProps) {
     fetchLogs();
   }, [team.id, filters]);
 
-  const handleFilterChange = (name: string, value: string) => {
+  const handleFilterChange = (name: keyof typeof filters, value: string) => {
     setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
-  const getStatusColor = (status: AuditLogStatus) => {
+  const getStatusColor = (status: AuditLogStatus): string => {
     switch (status) {
       case 'success':
         return 'text-green-600 bg-green-100';
