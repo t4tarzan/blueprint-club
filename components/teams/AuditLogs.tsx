@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Team } from '@prisma/client';
+import type { Team } from '../../types/team';
 import {
   CalendarIcon,
   ArrowPathIcon,
