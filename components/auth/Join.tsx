@@ -86,7 +86,7 @@ const Join = ({ recaptchaSiteKey }: JoinProps) => {
         placeholder="John Doe"
         value={formik.values.name}
         onChange={formik.handleChange}
-        error={formik.touched.name && formik.errors.name}
+        error={formik.touched.name ? formik.errors.name : undefined}
       />
 
       <InputWithLabel
@@ -96,17 +96,17 @@ const Join = ({ recaptchaSiteKey }: JoinProps) => {
         placeholder="Acme Inc"
         value={formik.values.team}
         onChange={formik.handleChange}
-        error={formik.touched.team && formik.errors.team}
+        error={formik.touched.team ? formik.errors.team : undefined}
       />
 
       <InputWithLabel
-        label="Email"
+        label="Email Address"
         name="email"
         type="email"
         placeholder="john@example.com"
         value={formik.values.email}
         onChange={formik.handleChange}
-        error={formik.touched.email && formik.errors.email}
+        error={formik.touched.email ? formik.errors.email : undefined}
       />
 
       <div className="relative">
@@ -117,7 +117,7 @@ const Join = ({ recaptchaSiteKey }: JoinProps) => {
           placeholder="••••••••"
           value={formik.values.password}
           onChange={formik.handleChange}
-          error={formik.touched.password && formik.errors.password}
+          error={formik.touched.password ? formik.errors.password : undefined}
         />
         <div className="absolute right-2 top-9">
           <TogglePasswordVisibility

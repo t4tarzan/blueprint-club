@@ -2,7 +2,7 @@ import { FC, InputHTMLAttributes } from 'react';
 
 interface InputWithLabelProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
-  error?: string;
+  error?: string | boolean;
 }
 
 export const InputWithLabel: FC<InputWithLabelProps> = ({
@@ -23,7 +23,7 @@ export const InputWithLabel: FC<InputWithLabelProps> = ({
           } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm`}
         />
       </div>
-      {error && (
+      {error && typeof error === 'string' && (
         <p className="mt-2 text-sm text-red-600" id={`${props.id}-error`}>
           {error}
         </p>
