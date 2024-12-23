@@ -18,7 +18,7 @@ export default function TeamSettingsPage({ team }: TeamSettingsPageProps) {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">Team Settings</h1>
         <p className="mt-2 text-sm text-gray-500">
-          Manage your team settings, members, and SSO configuration.
+          Manage your team settings and members.
         </p>
       </div>
 

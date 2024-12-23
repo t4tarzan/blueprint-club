@@ -132,23 +132,16 @@ model Follow {
 }
 
 model Team {
-  id            String       @id @default(cuid())
+  id            String      @id @default(cuid())
   name          String
-  slug          String       @unique
+  slug          String      @unique
   domain        String?
-  description   String?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  apiKeys       ApiKey[]
-  invitations   Invitation[]
+  features      String[]    @default([])
   members       TeamMember[]
+  apiKeys       ApiKey[]
   auditLogs     AuditLog[]
-  webhooks      Webhook[]
-  samlConfig    Json?        // SAML SSO configuration
-  scimToken     String?      @unique // SCIM provisioning token
-
-  @@index([slug])
-  @@index([domain])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 }
 
 model TeamMember {
