@@ -14,7 +14,7 @@
     "test:ci": "jest --ci --coverage --maxWorkers=2",
     "type-check": "tsc --noEmit",
     "prebuild": "npm run lint",
-    "vercel-build": "next build"
+    "vercel-build": "prisma generate && next build"
   },
   "keywords": [],
   "author": "",
