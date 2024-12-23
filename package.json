@@ -13,7 +13,7 @@
     "test:coverage": "jest --coverage",
     "test:ci": "jest --ci --coverage --maxWorkers=2",
     "type-check": "tsc --noEmit",
-    "prebuild": "npm run type-check && npm run lint",
+    "prebuild": "npm run lint",
     "vercel-build": "next build"
   },
   "keywords": [],

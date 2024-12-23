@@ -44,11 +44,6 @@ next-env.d.ts
 # Addons (to be integrated later)
 /addons/
 
-# Documentation and planning
-/docs/
-*.md
-!/README.md
-
 # Development
 /.husky/
 /scripts/
