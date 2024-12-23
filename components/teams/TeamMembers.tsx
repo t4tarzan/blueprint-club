@@ -51,7 +51,7 @@ export function TeamMembers({ team, onMemberUpdate }: TeamMembersProps) {
       (e.target as HTMLFormElement).reset();
       onMemberUpdate?.();
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'Failed to send invitation');
     } finally {
       setIsInviting(false);
     }
@@ -70,7 +70,7 @@ export function TeamMembers({ team, onMemberUpdate }: TeamMembersProps) {
 
       onMemberUpdate?.();
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'Failed to remove member');
     }
   };
 
@@ -93,7 +93,7 @@ export function TeamMembers({ team, onMemberUpdate }: TeamMembersProps) {
 
       onMemberUpdate?.();
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'Failed to update member role');
     }
   };
 
