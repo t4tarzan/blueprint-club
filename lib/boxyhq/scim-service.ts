@@ -1,4 +1,4 @@
-import { ScimService } from '@boxyhq/saml-jackson';
+import { ScimService } from '@boxyhq/scim-server-node';
 import { prisma } from '../prisma';
 import { Role } from '@prisma/client';
 

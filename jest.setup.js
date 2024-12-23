@@ -2,6 +2,42 @@
 import '@testing-library/jest-dom';
 import 'whatwg-fetch';
 
+// Extend Jest matchers
+expect.extend({
+  toBeInTheDocument(received) {
+    const pass = received !== null;
+    return {
+      message: () => `expected ${received} to be in the document`,
+      pass,
+    };
+  },
+  toHaveBeenCalledWith(...args) {
+    const mockFn = this.isNot ? expect(args[0]).not : expect(args[0]);
+    return mockFn.toHaveBeenCalledWith(...args.slice(1));
+  },
+  toContain(received, expected) {
+    const pass = received.includes(expected);
+    return {
+      message: () => `expected ${received} to contain ${expected}`,
+      pass,
+    };
+  },
+  toBe(received, expected) {
+    const pass = Object.is(received, expected);
+    return {
+      message: () => `expected ${received} to be ${expected}`,
+      pass,
+    };
+  },
+  toEqual(received, expected) {
+    const pass = this.equals(received, expected);
+    return {
+      message: () => `expected ${received} to equal ${expected}`,
+      pass,
+    };
+  },
+});
+
 // Mock Next.js router
 jest.mock('next/router', () => ({
   useRouter() {

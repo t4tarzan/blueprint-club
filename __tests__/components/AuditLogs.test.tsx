@@ -112,9 +112,11 @@ describe('AuditLogs', () => {
   });
 
   it('handles export functionality correctly', async () => {
-    const { window } = global;
-    delete global.window;
-    global.window = { ...window, location: { href: '' } };
+    const originalWindow = global.window;
+    global.window = {
+      ...originalWindow,
+      location: { href: '' } as Location
+    } as Window & typeof globalThis;
 
     render(<AuditLogs team={mockTeam} />);
 
@@ -131,7 +133,7 @@ describe('AuditLogs', () => {
       `/api/teams/${mockTeam.id}/audit-logs/export`
     );
 
-    global.window = window;
+    global.window = originalWindow;
   });
 
   it('handles error states correctly', async () => {

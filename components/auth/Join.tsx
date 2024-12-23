@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, MutableRefObject } from 'react';
 import { InputWithLabel } from '@/components/shared';
 import { defaultHeaders, passwordPolicies } from '@/lib/common';
 import { useFormik } from 'formik';
@@ -45,7 +45,7 @@ const Join = ({ recaptchaSiteKey }: JoinProps) => {
   const { t } = useTranslation('common');
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
-  const recaptchaRef = useRef<ReCAPTCHA>(null);
+  const recaptchaRef = useRef<ReCAPTCHA>(null) as MutableRefObject<ReCAPTCHA>;
 
   const handlePasswordVisibility = () => {
     setIsPasswordVisible((prev) => !prev);

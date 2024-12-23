@@ -1,15 +1,35 @@
 import { AuthOptions } from 'next-auth';
-import { PrismaAdapter } from '@auth/prisma-adapter';
+import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { compare } from 'bcryptjs';
 import { prisma } from '../prisma';
+import { Role } from '@/lib/types';
+
+export interface Team {
+  id: string;
+  name: string;
+  role: Role;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name: string | null;
+  image: string | null;
+  emailVerified: Date | null;
+  membershipTier: string;
+  teams?: Team[];
+  currentTeam?: Team;
+}
+
+export const adapter = PrismaAdapter(prisma);
 
 // Rate limiting configuration
 const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS || '5', 10);
 const LOGIN_ATTEMPT_WINDOW = parseInt(process.env.LOGIN_ATTEMPT_WINDOW || '300', 10);
 
 export const authOptions: AuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  adapter,
   providers: [
     CredentialsProvider({
       name: 'credentials',

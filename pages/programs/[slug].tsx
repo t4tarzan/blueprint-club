@@ -14,7 +14,7 @@ import ProgramDetailCard from '../../components/ProgramDetailCard';
 import YouTubeEmbed from '../../components/YouTubeEmbed';
 import ImageGrid from '../../components/ImageGrid';
 
-type ProgramVariant = 'adults' | 'schooling' | 'afterschool' | 'music';
+type ProgramVariant = 'adults' | 'schooling' | 'afterschool' | 'academy';
 
 interface Program {
   variant: ProgramVariant;
@@ -318,7 +318,7 @@ const programData: Record<string, Program> = {
     }
   },
   'rsl-program': {
-    variant: 'music',
+    variant: 'music' as ProgramVariant,
     title: 'RSL Awards Music Program',
     subtitle: 'Globally recognized music education and certification',
     description: 'An internationally acclaimed music education program offering comprehensive training in various instruments and music theory. Our program follows the prestigious RSL Awards curriculum, providing students with globally recognized certifications.',

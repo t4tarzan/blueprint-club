@@ -546,6 +546,59 @@ npm run jackson
    - Added necessary BoxyHQ environment variables
    - Configured SAML Jackson service
 
+## Testing Environment Setup (2024-12-23)
+
+### Configuration Updates
+- Updated `jest.setup.js` with extended Jest matchers and mocks for:
+  - Document-related assertions
+  - Function call assertions
+  - Equality and containment checks
+  - Next.js router mocks
+  - Next-auth mocks
+  - Environment variables
+
+### Dependencies Added
+- Installed core testing packages:
+  - `jest`
+  - `jest-environment-jsdom`
+  - `@swc/core`
+  - `@swc/jest`
+  - `identity-obj-proxy`
+  - `jest-watch-typeahead`
+
+### Jest Configuration
+- Updated `jest.config.js` with:
+  - Module path mappings for all project directories
+  - Test patterns focused on main application components
+  - Coverage thresholds set to 80% for all metrics
+  - SWC-based transformation setup
+  - Proper handling of module naming collisions
+  - Exclusion patterns for addon test fixtures
+
+### Next Steps
+- Create initial test suites for core components
+- Set up CI/CD pipeline integration for automated testing
+- Implement integration tests for critical user flows
+
+## Build Process Improvements (2024-12-23)
+
+### Vercel Build Error Prevention
+- Implemented comprehensive pre-build checks to catch Vercel deployment issues locally
+- Added type checking and linting scripts to match Vercel's strict build process
+- Configured Husky for pre-commit hooks to ensure code quality
+
+### New Development Scripts
+- Added `type-check` script for TypeScript validation
+- Created `prebuild` script combining type checking and linting
+- Implemented `vercel-build` script to mirror Vercel's build process
+
+### Documentation
+- Created detailed `prevercel.md` guide for preventing Vercel build issues
+- Updated approach documentation with build process best practices
+- Added build process section to integration plan
+
+For detailed information about preventing Vercel build issues, see [Pre-Vercel Deployment Guide](./prevercel.md).
+
 ## 2024-12-23 01:30:00 IST
 ### UI/UX Improvements
 

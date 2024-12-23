@@ -1,125 +1,115 @@
-import { Jackson } from '@boxyhq/saml-jackson';
-import type { SAMLConnection } from '@boxyhq/saml-jackson/dist/src/typings';
-import { getJacksonOption } from './config';
+import { jackson, JacksonOption } from '@boxyhq/saml-jackson';
+import { prisma } from '@/lib/prisma';
+
+export interface SAMLConfig {
+  encodedRawMetadata?: string;
+  metadataUrl?: string;
+  defaultRedirectUrl: string;
+  redirectUrl: string[];
+  tenant: string;
+  product: string;
+}
+
+export interface SAMLConnection {
+  tenant: string;
+  product: string;
+  defaultRedirectUrl: string;
+  redirectUrl: string[];
+  name?: string;
+  description?: string;
+  encodedRawMetadata?: string;
+  metadataUrl?: string;
+}
 
 export class SAMLService {
-  private static instance: SAMLService;
-  private jackson: Promise<any>;
+  private jacksonClient: any;
 
-  private constructor() {
-    this.jackson = Jackson.init(getJacksonOption());
+  constructor() {
+    this.initJackson();
   }
 
-  public static getInstance(): SAMLService {
-    if (!SAMLService.instance) {
-      SAMLService.instance = new SAMLService();
-    }
-    return SAMLService.instance;
-  }
-
-  /**
-   * Create a new SAML connection for a team
-   */
-  async createConnection(params: {
-    tenant: string;
-    product: string;
-    encodedRawMetadata?: string;
-    metadataUrl?: string;
-    defaultRedirectUrl?: string;
-    redirectUrl?: string[];
-    entityId?: string;
-    acsUrl?: string;
-    idpUrl?: string;
-    certificate?: string;
-  }): Promise<SAMLConnection> {
-    const jackson = await this.jackson;
-    return jackson.createSamlConnection(params);
-  }
-
-  /**
-   * Get SAML connection for a team
-   */
-  async getConnection(tenant: string, product: string): Promise<SAMLConnection | null> {
-    const jackson = await this.jackson;
-    return jackson.getSamlConnection({ tenant, product });
-  }
-
-  /**
-   * Delete SAML connection for a team
-   */
-  async deleteConnection(tenant: string, product: string): Promise<void> {
-    const jackson = await this.jackson;
-    await jackson.deleteSamlConnection({ tenant, product });
-  }
-
-  /**
-   * Get SAML metadata for a team
-   */
-  async getMetadata(tenant: string, product: string): Promise<string> {
-    const jackson = await this.jackson;
-    return jackson.metadata({ tenant, product });
-  }
-
-  /**
-   * Validate SAML response
-   */
-  async validateSamlResponse(params: {
-    samlResponse: string;
-    relayState?: string;
-  }): Promise<{
-    profile: {
-      id: string;
-      email: string;
-      firstName?: string;
-      lastName?: string;
-      name?: string;
+  private async initJackson() {
+    const options: JacksonOption = {
+      externalUrl: process.env.NEXTAUTH_URL || 'http://localhost:3000',
+      db: {
+        engine: 'sql',
+        type: 'postgres',
+        url: process.env.DATABASE_URL!,
+      },
+      saml: {
+        callback: '/api/auth/saml/callback',
+      },
     };
-    tenant: string;
-    product: string;
-  }> {
-    const jackson = await this.jackson;
-    return jackson.validateSamlResponse(params);
+
+    this.jacksonClient = await jackson(options);
   }
 
-  /**
-   * Get OAuth authorization URL
-   */
-  async getAuthorizationUrl(params: {
-    tenant: string;
-    product: string;
-    redirectUri: string;
-    state?: string;
-  }): Promise<string> {
-    const jackson = await this.jackson;
-    return jackson.getAuthorizationUrl(params);
+  async createConnection(config: SAMLConfig) {
+    const connection = await this.jacksonClient.connectionAPIController.createSAMLConnection({
+      encodedRawMetadata: config.encodedRawMetadata,
+      metadataUrl: config.metadataUrl,
+      defaultRedirectUrl: config.defaultRedirectUrl,
+      redirectUrl: config.redirectUrl,
+      tenant: config.tenant,
+      product: config.product,
+    });
+
+    return connection;
   }
 
-  /**
-   * Get OAuth access token
-   */
-  async getOAuthToken(params: {
-    code: string;
-    redirectUri: string;
-  }): Promise<{
-    access_token: string;
-    token_type: string;
-    expires_in: number;
-  }> {
-    const jackson = await this.jackson;
-    return jackson.getOAuthToken(params);
+  async getConnection(tenant: string, product: string) {
+    const connection = await this.jacksonClient.connectionAPIController.getSAMLConnection({
+      tenant,
+      product,
+    });
+
+    return connection;
   }
 
-  /**
-   * Get user profile from OAuth token
-   */
-  async getUserInfo(accessToken: string): Promise<{
-    id: string;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    name?: string;
-  }> {
-    const jackson = await this.jackson;
-    return jackson.userInfo(accessToken);
+  async deleteConnection(tenant: string, product: string) {
+    await this.jacksonClient.connectionAPIController.deleteSAMLConnection({
+      tenant,
+      product,
+    });
+  }
+
+  async getMetadata(tenant: string, product: string) {
+    const metadata = await this.jacksonClient.connectionAPIController.getMetadata({
+      tenant,
+      product,
+    });
+
+    return metadata;
+  }
+
+  async validateSAMLResponse(payload: any) {
+    const response = await this.jacksonClient.authAPIController.validateSAMLResponse(payload);
+    return response;
+  }
+
+  async getAuthorizationUrl(tenant: string, product: string, redirectUrl?: string) {
+    const url = await this.jacksonClient.authAPIController.getAuthorizationUrl({
+      tenant,
+      product,
+      redirectUrl,
+    });
+
+    return url;
+  }
+
+  async getOAuthToken(code: string) {
+    const token = await this.jacksonClient.authAPIController.getOAuthToken({
+      code,
+    });
+
+    return token;
+  }
+
+  async getUserInfo(token: string) {
+    const userInfo = await this.jacksonClient.authAPIController.userInfo({
+      token,
+    });
+
+    return userInfo;
   }
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import prisma from '@/lib/prisma';
+import { prisma } from '@/lib/prisma';
 
 const PUBLIC_PATHS = [
   '/',

@@ -18,7 +18,7 @@ import toast from 'react-hot-toast';
 import type { ApiResponse } from 'types';
 import * as Yup from 'yup';
 import TogglePasswordVisibility from '../shared/TogglePasswordVisibility';
-import { useRef, useState } from 'react';
+import { useRef, useState, MutableRefObject } from 'react';
 import AgreeMessage from './AgreeMessage';
 import GoogleReCAPTCHA from '../shared/GoogleReCAPTCHA';
 import ReCAPTCHA from 'react-google-recaptcha';
@@ -59,7 +59,7 @@ const JoinWithInvitation = ({
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
   const { isLoading, error: invitationError, invitation, invitationDetails } = useInvitation();
   const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
-  const recaptchaRef = useRef<ReCAPTCHA>(null);
+  const recaptchaRef = useRef<ReCAPTCHA>(null) as MutableRefObject<ReCAPTCHA>;
 
   const handlePasswordVisibility = () => {
     setIsPasswordVisible((prev) => !prev);

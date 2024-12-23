@@ -1,5 +1,5 @@
 import { SubscriptionStatus } from '@prisma/client';
-import prisma from './prisma';
+import { prisma } from './prisma';
 
 export interface SubscriptionPlan {
   name: string;
