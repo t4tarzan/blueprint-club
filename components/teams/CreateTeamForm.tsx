@@ -11,14 +11,9 @@ interface CreateTeamFormProps {
   onSuccess?: () => void;
 }
 
-interface CreateTeamResponse {
-  slug: string;
-  [key: string]: unknown;
-}
-
 interface CreateTeamValues {
   name: string;
-  domain?: string;
+  domain: string;
 }
 
 const createTeamSchema = Yup.object().shape({
@@ -27,7 +22,10 @@ const createTeamSchema = Yup.object().shape({
     .max(50, 'Team name must be less than 50 characters')
     .required('Team name is required'),
   domain: Yup.string()
-    .matches(/^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+$/, 'Invalid domain format')
+    .matches(
+      /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9](?:\.[a-zA-Z]{2,})+$/,
+      'Invalid domain format'
+    )
     .optional(),
 });
 
@@ -68,7 +66,7 @@ export function CreateTeamForm({ onSuccess }: CreateTeamFormProps) {
           );
         }
 
-        const team = data as CreateTeamResponse;
+        const team = data as { slug: string };
         
         if (!team.slug) {
           throw new Error('Invalid team response: missing slug');
@@ -86,29 +84,29 @@ export function CreateTeamForm({ onSuccess }: CreateTeamFormProps) {
   return (
     <form onSubmit={formik.handleSubmit} className="space-y-6">
       <InputWithLabel
-        label={t('team-name')}
-        type="text"
         id="name"
         name="name"
+        type="text"
+        label={t('team-name')}
         value={formik.values.name}
         onChange={formik.handleChange}
         onBlur={formik.handleBlur}
-        error={formik.touched.name ? formik.errors.name : undefined}
-        required
+        error={formik.touched.name && formik.errors.name ? formik.errors.name : undefined}
         placeholder={t('enter-team-name')}
+        required
       />
 
       <InputWithLabel
-        label={t('domain')}
-        type="text"
         id="domain"
         name="domain"
+        type="text"
+        label={t('domain')}
         value={formik.values.domain}
         onChange={formik.handleChange}
         onBlur={formik.handleBlur}
-        error={formik.touched.domain ? formik.errors.domain : undefined}
+        error={formik.touched.domain && formik.errors.domain ? formik.errors.domain : undefined}
         placeholder="company.com"
-        helpText={t('domain-help-text')}
+        descriptionText={t('domain-help-text')}
       />
 
       {error && (
@@ -121,15 +119,13 @@ export function CreateTeamForm({ onSuccess }: CreateTeamFormProps) {
         </div>
       )}
 
-      <div>
-        <button
-          type="submit"
-          disabled={formik.isSubmitting || !formik.isValid}
-          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {formik.isSubmitting ? t('creating') : t('create-team')}
-        </button>
-      </div>
+      <button
+        type="submit"
+        disabled={formik.isSubmitting || !formik.isValid}
+        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {formik.isSubmitting ? t('creating') : t('create-team')}
+      </button>
     </form>
   );
 }
