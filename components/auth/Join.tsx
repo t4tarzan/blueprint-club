@@ -79,7 +79,10 @@ const Join = ({ recaptchaSiteKey }: JoinProps) => {
         const data: ApiResponse = await response.json();
 
         if (!response.ok) {
-          const errorMessage = data.error?.message || data.message || 'Something went wrong';
+          // Extract error message safely
+          const errorMessage = typeof data.error === 'object' && data.error?.message 
+            ? data.error.message 
+            : data.message || 'Something went wrong';
           throw new Error(errorMessage);
         }
 
