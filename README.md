@@ -8,6 +8,8 @@
   An enterprise-grade SaaS platform built with Next.js 14, BoxyHQ, and modern web technologies.
 </p>
 
+Test line for version3-constellation branch - verifying build settings
+
 ## 📚 README Files Guide
 
 This project contains multiple README files for different components. Here's a quick guide:
