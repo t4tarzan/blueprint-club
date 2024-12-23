@@ -53,19 +53,18 @@ export interface AuditLog {
 
 export interface ApiResponse<T = any> {
   data?: T;
-  error?: string;
+  error?: ApiError;
   message?: string;
   status?: number;
 }
 
-export interface ApiResponse {
-  data?: any;
-  message?: string;
+export interface ApiError {
+  message: string;
+  code?: string;
 }
 
 export interface ApiErrorResponse {
-  error: {
-    message: string;
-    code?: string;
-  };
+  error?: ApiError;
+  message?: string;
+  status?: number;
 }
