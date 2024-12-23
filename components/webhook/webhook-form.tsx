@@ -3,110 +3,115 @@ import { WebhookFormProps, WebhookEvent } from '@/lib/types/webhook';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
+import { useTranslation } from 'next-i18next';
 
-interface Webhook {
-  id?: string;
-  url: string;
-  secret: string;
-  active: boolean;
-  events: WebhookEvent[];
-  teamId?: string;
-}
+export function WebhookForm({ webhook, onSubmit, onCancel, events }: WebhookFormProps) {
+  const { t } = useTranslation('common');
+  const [formData, setFormData] = useState({
+    url: webhook?.url || '',
+    secret: webhook?.secret || '',
+    events: webhook?.events || [],
+    enabled: webhook?.enabled ?? true,
+  });
 
-export function WebhookForm({ webhook, onSubmit, onCancel }: WebhookFormProps) {
-  const [url, setUrl] = useState(webhook?.url || '');
-  const [secret, setSecret] = useState(webhook?.secret || '');
-  const [active, setActive] = useState(webhook?.active ?? true);
-  const [events, setEvents] = useState<WebhookEvent[]>(webhook?.events || []);
-
-  const webhookEvents: WebhookEvent[] = [
-    'team.create',
-    'team.update',
-    'team.delete',
-    'member.add',
-    'member.remove',
-    'member.update',
+  const availableEvents: WebhookEvent[] = [
+    { id: 'user.created', name: 'User Created', description: 'When a new user is created' },
+    { id: 'user.updated', name: 'User Updated', description: 'When a user is updated' },
+    { id: 'user.deleted', name: 'User Deleted', description: 'When a user is deleted' },
+    { id: 'team.created', name: 'Team Created', description: 'When a new team is created' },
+    { id: 'team.updated', name: 'Team Updated', description: 'When a team is updated' },
+    { id: 'team.deleted', name: 'Team Deleted', description: 'When a team is deleted' },
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({
-      ...(webhook?.id ? { id: webhook.id } : {}),
-      url,
-      secret,
-      active,
-      events,
-    });
+    await onSubmit(formData);
   };
 
-  const toggleEvent = (event: WebhookEvent) => {
-    if (events.includes(event)) {
-      setEvents(events.filter((e) => e !== event));
-    } else {
-      setEvents([...events, event]);
-    }
+  const toggleEvent = (eventId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      events: prev.events.includes(eventId)
+        ? prev.events.filter((e) => e !== eventId)
+        : [...prev.events, eventId],
+    }));
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-2">
-        <Label htmlFor="url">Webhook URL</Label>
-        <Input
-          id="url"
-          type="url"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://example.com/webhook"
-          required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="secret">Secret</Label>
-        <Input
-          id="secret"
-          type="text"
-          value={secret}
-          onChange={(e) => setSecret(e.target.value)}
-          placeholder="webhook_secret"
-          required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label>Events</Label>
-        <div className="grid grid-cols-2 gap-4">
-          {webhookEvents.map((event) => (
-            <div key={event} className="flex items-center space-x-2">
-              <Checkbox
-                id={event}
-                checked={events.includes(event)}
-                onCheckedChange={() => toggleEvent(event)}
-              />
-              <Label htmlFor={event}>{event}</Label>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="active"
-            checked={active}
-            onCheckedChange={(checked: boolean) => setActive(checked)}
+      <div className="space-y-4">
+        <div>
+          <label htmlFor="url" className="block text-sm font-medium">
+            {t('webhook.url')}
+          </label>
+          <Input
+            id="url"
+            type="url"
+            value={formData.url}
+            onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+            required
+            placeholder="https://your-domain.com/webhook"
+            className="mt-1"
           />
-          <Label htmlFor="active">Active</Label>
+        </div>
+
+        <div>
+          <label htmlFor="secret" className="block text-sm font-medium">
+            {t('webhook.secret')}
+          </label>
+          <Input
+            id="secret"
+            type="text"
+            value={formData.secret}
+            onChange={(e) => setFormData({ ...formData, secret: e.target.value })}
+            required
+            placeholder="webhook-secret"
+            className="mt-1"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            {t('webhook.events')}
+          </label>
+          <div className="space-y-2">
+            {availableEvents.map((event) => (
+              <div key={event.id} className="flex items-center">
+                <Checkbox
+                  id={event.id}
+                  checked={formData.events.includes(event.id)}
+                  onCheckedChange={() => toggleEvent(event.id)}
+                />
+                <label htmlFor={event.id} className="ml-2 text-sm">
+                  {event.name}
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center">
+          <Checkbox
+            id="enabled"
+            checked={formData.enabled}
+            onCheckedChange={(checked) =>
+              setFormData({ ...formData, enabled: checked as boolean })
+            }
+          />
+          <label htmlFor="enabled" className="ml-2 text-sm">
+            {t('webhook.enabled')}
+          </label>
         </div>
       </div>
 
-      <div className="flex justify-end space-x-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
+      <div className="flex justify-end space-x-2">
+        {onCancel && (
+          <Button type="button" variant="outline" onClick={onCancel}>
+            {t('common.cancel')}
+          </Button>
+        )}
         <Button type="submit">
-          {webhook ? 'Update Webhook' : 'Create Webhook'}
+          {webhook ? t('common.update') : t('common.create')}
         </Button>
       </div>
     </form>

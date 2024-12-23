@@ -8,6 +8,9 @@ export interface WebhookFormProps {
   onSubmit: (data: any) => Promise<void>;
   initialData?: any;
   events: WebhookEvent[];
+  webhook?: Webhook;
+  onCancel?: () => void;
+  teamId?: string;
 }
 
 export interface Webhook {
@@ -16,6 +19,7 @@ export interface Webhook {
   events: string[];
   secret: string;
   enabled: boolean;
+  active: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,6 +39,8 @@ export interface WebhookDelivery {
 export interface WebhookListProps {
   webhooks: Webhook[];
   onDelete: (id: string) => Promise<void>;
+  onUpdate?: (webhook: Webhook) => Promise<void>;
+  teamId?: string;
 }
 
 export type AuditLogAction =
