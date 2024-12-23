@@ -94,10 +94,8 @@ export function WebhookList({ teamId }: WebhookListProps) {
                     </p>
                   )}
                 </div>
-                <Badge variant={webhook.isActive ? 'success' : 'gray'}>
-                  {webhook.isActive
-                    ? t('webhooks:status.active')
-                    : t('webhooks:status.inactive')}
+                <Badge variant={webhook.isActive ? 'default' : 'secondary'}>
+                  {webhook.isActive ? t('active') : t('inactive')}
                 </Badge>
               </div>
 
@@ -107,8 +105,8 @@ export function WebhookList({ teamId }: WebhookListProps) {
                 </h4>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {webhook.events.map((event) => (
-                    <Badge key={event} variant="blue">
-                      {t(`webhooks:events.${event}`)}
+                    <Badge key={event} variant="secondary">
+                      {event}
                     </Badge>
                   ))}
                 </div>
@@ -117,14 +115,14 @@ export function WebhookList({ teamId }: WebhookListProps) {
               <div className="mt-4 flex items-center justify-between border-t pt-4">
                 <div className="flex space-x-3">
                   <Button
-                    variant="secondary"
+                    variant="outline"
                     size="sm"
                     onClick={() => setEditingWebhook(webhook)}
                   >
                     {t('common:edit')}
                   </Button>
                   <Button
-                    variant="danger"
+                    variant="destructive"
                     size="sm"
                     onClick={() => handleDelete(webhook.id)}
                   >
@@ -132,7 +130,7 @@ export function WebhookList({ teamId }: WebhookListProps) {
                   </Button>
                 </div>
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   size="sm"
                   onClick={() =>
                     setShowDeliveries(

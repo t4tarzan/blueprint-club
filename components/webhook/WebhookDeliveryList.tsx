@@ -71,7 +71,7 @@ export function WebhookDeliveryList({
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Badge
-                  variant={delivery.success ? 'success' : 'danger'}
+                  variant={delivery.success ? 'default' : 'destructive'}
                   className="uppercase"
                 >
                   {delivery.statusCode}
