@@ -1,118 +1,107 @@
 import { useState } from 'react';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { WebhookFormProps, WebhookEvent } from '@/lib/types';
 
 interface Webhook {
   id?: string;
   url: string;
   secret: string;
   active: boolean;
-  events: string[];
+  events: WebhookEvent[];
   teamId?: string;
 }
-
-interface WebhookFormProps {
-  webhook?: Webhook;
-  onSubmit: (webhook: Webhook) => void;
-  onCancel: () => void;
-}
-
-const AVAILABLE_EVENTS = [
-  'user.created',
-  'user.updated',
-  'user.deleted',
-  'team.created',
-  'team.updated',
-  'team.deleted',
-  'team.member.added',
-  'team.member.removed',
-  'team.member.updated',
-];
 
 export function WebhookForm({ webhook, onSubmit, onCancel }: WebhookFormProps) {
   const [url, setUrl] = useState(webhook?.url || '');
   const [secret, setSecret] = useState(webhook?.secret || '');
   const [active, setActive] = useState(webhook?.active ?? true);
-  const [selectedEvents, setSelectedEvents] = useState<string[]>(
-    webhook?.events || []
-  );
+  const [events, setEvents] = useState<WebhookEvent[]>(webhook?.events || []);
+
+  const webhookEvents: WebhookEvent[] = [
+    'team.create',
+    'team.update',
+    'team.delete',
+    'member.add',
+    'member.remove',
+    'member.update',
+  ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    const formData: Webhook = {
+    onSubmit({
       ...(webhook?.id ? { id: webhook.id } : {}),
       url,
       secret,
       active,
-      events: selectedEvents,
-    };
-
-    onSubmit(formData);
+      events,
+    });
   };
 
-  const toggleEvent = (event: string) => {
-    setSelectedEvents((prev) =>
-      prev.includes(event)
-        ? prev.filter((e) => e !== event)
-        : [...prev, event]
-    );
+  const toggleEvent = (event: WebhookEvent) => {
+    if (events.includes(event)) {
+      setEvents(events.filter((e) => e !== event));
+    } else {
+      setEvents([...events, event]);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
+      <div className="space-y-2">
         <Label htmlFor="url">Webhook URL</Label>
         <Input
           id="url"
           type="url"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          required
           placeholder="https://example.com/webhook"
+          required
         />
       </div>
 
-      <div>
-        <Label htmlFor="secret">Webhook Secret</Label>
+      <div className="space-y-2">
+        <Label htmlFor="secret">Secret</Label>
         <Input
           id="secret"
           type="text"
           value={secret}
           onChange={(e) => setSecret(e.target.value)}
+          placeholder="webhook_secret"
           required
-          placeholder="Enter a secret key"
         />
       </div>
 
-      <div>
-        <Label>
-          <Checkbox
-            checked={active}
-            onCheckedChange={(checked) => setActive(checked as boolean)}
-          />
-          <span className="ml-2">Active</span>
-        </Label>
-      </div>
-
-      <div>
+      <div className="space-y-2">
         <Label>Events</Label>
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          {AVAILABLE_EVENTS.map((event) => (
-            <Label key={event} className="flex items-center space-x-2">
+        <div className="grid grid-cols-2 gap-4">
+          {webhookEvents.map((event) => (
+            <div key={event} className="flex items-center space-x-2">
               <Checkbox
-                checked={selectedEvents.includes(event)}
+                id={event}
+                checked={events.includes(event)}
                 onCheckedChange={() => toggleEvent(event)}
               />
-              <span>{event}</span>
-            </Label>
+              <Label htmlFor={event}>{event}</Label>
+            </div>
           ))}
         </div>
       </div>
 
-      <div className="flex justify-end space-x-2">
+      <div className="space-y-2">
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="active"
+            checked={active}
+            onCheckedChange={(checked: boolean) => setActive(checked)}
+          />
+          <Label htmlFor="active">Active</Label>
+        </div>
+      </div>
+
+      <div className="flex justify-end space-x-4">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>

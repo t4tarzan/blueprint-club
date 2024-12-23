@@ -1,83 +1,104 @@
-import { useState } from 'react';
-import { WebhookDelivery } from '@/lib/types';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
-import { formatDistanceToNow } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { WebhookDelivery } from '@/lib/types';
 
 interface WebhookDeliveryListProps {
-  deliveries: WebhookDelivery[];
+  webhookId: string;
 }
 
-export function WebhookDeliveryList({ deliveries }: WebhookDeliveryListProps) {
-  const [selectedDelivery, setSelectedDelivery] = useState<string | null>(null);
+export function WebhookDeliveryList({ webhookId }: WebhookDeliveryListProps) {
+  const [deliveries, setDeliveries] = useState<WebhookDelivery[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchDeliveries();
+  }, [webhookId]);
+
+  const fetchDeliveries = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/webhooks/${webhookId}/deliveries`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch webhook deliveries');
+      }
+      const data = await response.json();
+      setDeliveries(data);
+    } catch (error) {
+      console.error('Error fetching webhook deliveries:', error);
+      setError('Failed to load webhook deliveries');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatDate = (date: Date) => {
-    return formatDistanceToNow(new Date(date), { addSuffix: true });
+    return new Date(date).toLocaleString();
   };
+
+  const getStatusColor = (status: number) => {
+    if (status >= 200 && status < 300) return 'text-green-600';
+    if (status >= 300 && status < 400) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
+  if (loading) {
+    return (
+      <Card className="p-4">
+        <p className="text-center text-gray-500">Loading deliveries...</p>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="p-4">
+        <div className="text-center">
+          <p className="text-red-500 mb-2">{error}</p>
+          <Button onClick={fetchDeliveries}>Retry</Button>
+        </div>
+      </Card>
+    );
+  }
+
+  if (deliveries.length === 0) {
+    return (
+      <Card className="p-4">
+        <p className="text-center text-gray-500">No deliveries found</p>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-4">
       {deliveries.map((delivery) => (
         <Card key={delivery.id} className="p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex justify-between items-start">
             <div>
               <div className="flex items-center space-x-2">
-                <Badge
-                  variant={delivery.statusCode === 200 ? 'default' : 'destructive'}
-                >
-                  {delivery.statusCode === 200 ? 'Success' : 'Failed'}
-                </Badge>
+                <span className={getStatusColor(delivery.statusCode)}>
+                  {delivery.statusCode}
+                </span>
                 <span className="text-sm text-gray-500">
-                  {delivery.event} • {formatDate(delivery.createdAt)}
+                  {formatDate(delivery.createdAt)}
                 </span>
               </div>
-              <div className="mt-1">
-                <span className="text-sm">
-                  Duration: {delivery.duration}ms • Status: {delivery.statusCode}
-                </span>
-              </div>
+              <p className="mt-2 text-sm">
+                {delivery.error || 'Delivery successful'}
+              </p>
             </div>
             <Button
               variant="outline"
-              onClick={() =>
-                setSelectedDelivery(
-                  selectedDelivery === delivery.id ? null : delivery.id
-                )
-              }
+              size="sm"
+              onClick={() => {
+                // TODO: Implement delivery details view
+                console.log('View delivery details:', delivery);
+              }}
             >
-              {selectedDelivery === delivery.id ? 'Hide Details' : 'View Details'}
+              View Details
             </Button>
           </div>
-
-          {selectedDelivery === delivery.id && (
-            <div className="mt-4 space-y-4">
-              <div>
-                <h4 className="text-sm font-medium mb-2">Request Headers</h4>
-                <pre className="text-sm bg-gray-100 p-2 rounded">
-                  {JSON.stringify(delivery.requestHeaders, null, 2)}
-                </pre>
-              </div>
-              <div>
-                <h4 className="text-sm font-medium mb-2">Request Body</h4>
-                <pre className="text-sm bg-gray-100 p-2 rounded">
-                  {delivery.requestBody}
-                </pre>
-              </div>
-              <div>
-                <h4 className="text-sm font-medium mb-2">Response Headers</h4>
-                <pre className="text-sm bg-gray-100 p-2 rounded">
-                  {JSON.stringify(delivery.responseHeaders, null, 2)}
-                </pre>
-              </div>
-              <div>
-                <h4 className="text-sm font-medium mb-2">Response Body</h4>
-                <pre className="text-sm bg-gray-100 p-2 rounded">
-                  {delivery.responseBody}
-                </pre>
-              </div>
-            </div>
-          )}
         </Card>
       ))}
     </div>

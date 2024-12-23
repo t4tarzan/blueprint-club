@@ -1,159 +1,125 @@
 import { useState } from 'react';
-import { WebhookDelivery } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { WebhookForm } from './webhook-form';
 import { WebhookDeliveryList } from './webhook-delivery-list';
-import { toast } from 'react-hot-toast';
+import { Webhook, WebhookListProps } from '@/lib/types';
 
-interface Webhook {
-  id: string;
-  url: string;
-  secret: string;
-  active: boolean;
-  events: string[];
-  createdAt: Date;
-  updatedAt: Date;
-  teamId: string;
-  deliveries?: WebhookDelivery[];
-}
-
-interface WebhookListProps {
-  webhooks: Webhook[];
-  teamId: string;
-}
-
-export function WebhookList({ webhooks, teamId }: WebhookListProps) {
-  const [selectedWebhook, setSelectedWebhook] = useState<Webhook | null>(null);
+export function WebhookList({ webhooks, onDelete, onUpdate }: WebhookListProps) {
   const [showForm, setShowForm] = useState(false);
+  const [selectedWebhook, setSelectedWebhook] = useState<Webhook | null>(null);
+  const [showDeliveries, setShowDeliveries] = useState<string | null>(null);
 
-  const handleWebhookCreate = async (webhook: Webhook) => {
+  const handleSubmit = async (webhook: Webhook) => {
     try {
-      const response = await fetch('/api/webhooks', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ...webhook, teamId }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create webhook');
-      }
-
-      toast.success('Webhook created successfully');
+      await onUpdate(webhook);
       setShowForm(false);
-    } catch (error) {
-      console.error('Error creating webhook:', error);
-      toast.error('Failed to create webhook');
-    }
-  };
-
-  const handleWebhookUpdate = async (webhook: Webhook) => {
-    try {
-      const response = await fetch(`/api/webhooks/${webhook.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(webhook),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update webhook');
-      }
-
-      toast.success('Webhook updated successfully');
       setSelectedWebhook(null);
     } catch (error) {
-      console.error('Error updating webhook:', error);
-      toast.error('Failed to update webhook');
+      console.error('Failed to update webhook:', error);
     }
   };
 
-  const handleWebhookDelete = async (webhookId: string) => {
+  const handleDelete = async (webhook: Webhook) => {
     try {
-      const response = await fetch(`/api/webhooks/${webhookId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete webhook');
-      }
-
-      toast.success('Webhook deleted successfully');
-      setSelectedWebhook(null);
+      await onDelete(webhook);
     } catch (error) {
-      console.error('Error deleting webhook:', error);
-      toast.error('Failed to delete webhook');
+      console.error('Failed to delete webhook:', error);
     }
   };
+
+  const handleEdit = (webhook: Webhook) => {
+    setSelectedWebhook(webhook);
+    setShowForm(true);
+  };
+
+  const handleToggleDeliveries = (webhookId: string) => {
+    setShowDeliveries(showDeliveries === webhookId ? null : webhookId);
+  };
+
+  if (showForm) {
+    return (
+      <WebhookForm
+        webhook={selectedWebhook || undefined}
+        onSubmit={handleSubmit}
+        onCancel={() => {
+          setShowForm(false);
+          setSelectedWebhook(null);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-lg font-medium">Webhooks</h2>
-        <Button onClick={() => setShowForm(true)}>Create Webhook</Button>
+        <h2 className="text-2xl font-bold">Webhooks</h2>
+        <Button onClick={() => setShowForm(true)}>Add Webhook</Button>
       </div>
 
-      {showForm && (
-        <Card className="p-4">
-          <WebhookForm
-            onSubmit={handleWebhookCreate}
-            onCancel={() => setShowForm(false)}
-          />
+      {webhooks.length === 0 ? (
+        <Card className="p-6">
+          <p className="text-center text-gray-500">No webhooks configured</p>
         </Card>
-      )}
-
-      {webhooks.map((webhook) => (
-        <Card key={webhook.id} className="p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-medium">{webhook.url}</h3>
-              <div className="mt-1 flex items-center space-x-2">
-                <Badge variant={webhook.active ? 'default' : 'secondary'}>
-                  {webhook.active ? 'Active' : 'Inactive'}
-                </Badge>
-                <span className="text-sm text-gray-500">
-                  {webhook.events.join(', ')}
-                </span>
+      ) : (
+        <div className="space-y-4">
+          {webhooks.map((webhook) => (
+            <Card key={webhook.id} className="p-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="font-medium">{webhook.url}</h3>
+                  <div className="mt-2 space-y-1 text-sm text-gray-500">
+                    <p>Events: {webhook.events.join(', ')}</p>
+                    <p>
+                      Status:{' '}
+                      <span
+                        className={`inline-block px-2 py-1 rounded-full text-xs ${
+                          webhook.active
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {webhook.active ? 'Active' : 'Inactive'}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleToggleDeliveries(webhook.id)}
+                  >
+                    {showDeliveries === webhook.id
+                      ? 'Hide Deliveries'
+                      : 'Show Deliveries'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEdit(webhook)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => handleDelete(webhook)}
+                  >
+                    Delete
+                  </Button>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                onClick={() => setSelectedWebhook(webhook)}
-              >
-                Edit
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => handleWebhookDelete(webhook.id)}
-              >
-                Delete
-              </Button>
-            </div>
-          </div>
 
-          {selectedWebhook?.id === webhook.id && (
-            <div className="mt-4">
-              <WebhookForm
-                webhook={webhook}
-                onSubmit={handleWebhookUpdate}
-                onCancel={() => setSelectedWebhook(null)}
-              />
-            </div>
-          )}
-
-          {webhook.deliveries && webhook.deliveries.length > 0 && (
-            <div className="mt-4">
-              <h4 className="text-sm font-medium mb-2">Recent Deliveries</h4>
-              <WebhookDeliveryList deliveries={webhook.deliveries} />
-            </div>
-          )}
-        </Card>
-      ))}
+              {showDeliveries === webhook.id && (
+                <div className="mt-4">
+                  <WebhookDeliveryList webhookId={webhook.id} />
+                </div>
+              )}
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
