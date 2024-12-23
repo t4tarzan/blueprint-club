@@ -1,0 +1,42 @@
+# dependencies
+node_modules
+.pnp
+.pnp.js
+
+# testing
+coverage
+__tests__
+*.test.ts
+*.test.tsx
+jest.config.js
+jest.setup.js
+
+# development
+.git
+.gitignore
+.env*.local
+.env.development
+.env.test
+.env
+README.md
+*.log
+*.tsbuildinfo
+.husky
+scripts
+
+# documentation and planning
+docs
+*.md
+!README.md
+
+# addons (to be integrated later)
+addons
+
+# misc
+*.pem
+.DS_Store
+*.log
+
+# TypeScript
+*.tsbuildinfo
+tsconfig.tsbuildinfo

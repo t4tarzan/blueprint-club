@@ -5,6 +5,11 @@
 
 # testing
 /coverage
+/__tests__
+*.test.ts
+*.test.tsx
+jest.config.js
+jest.setup.js
 
 # next.js
 /.next/
@@ -16,6 +21,8 @@
 # misc
 .DS_Store
 *.pem
+*.log
+*.tsbuildinfo
 
 # debug
 npm-debug.log*
@@ -25,13 +32,23 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+.env.development
+.env.test
 
 # vercel
 .vercel
 
 # typescript
-*.tsbuildinfo
 next-env.d.ts
 
 # Addons (to be integrated later)
 /addons/
+
+# Documentation and planning
+/docs/
+*.md
+!/README.md
+
+# Development
+/.husky/
+/scripts/
