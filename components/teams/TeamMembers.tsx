@@ -1,206 +1,187 @@
-import { useState } from 'react';
-import { Team, User, TeamMember, Role } from '../../types';
+import { SerializedTeam, SerializedTeamMember } from '@/lib/types/prisma';
+import { Role } from '@prisma/client';
 import { useSession } from 'next-auth/react';
-import { useTranslation } from 'next-i18next';
+import { useState } from 'react';
+import { useToast } from '@/components/ui/use-toast';
 
 interface TeamMembersProps {
-  team: Team & {
-    members: (TeamMember & {
-      user: User;
-    })[];
-  };
-  onMemberUpdate?: () => void;
+  team: SerializedTeam;
+  onUpdate?: () => void;
 }
 
-export function TeamMembers({ team, onMemberUpdate }: TeamMembersProps) {
+const TeamMembers = ({ team, onUpdate }: TeamMembersProps) => {
   const { data: session } = useSession();
-  const [isInviting, setIsInviting] = useState(false);
-  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const toast = useToast();
+
   const currentUserRole = team.members.find(
-    m => m.userId === session?.user?.id
+    (member) => member.userId === session?.user?.id
   )?.role;
 
-  const canManageMembers = currentUserRole === 'OWNER' || currentUserRole === 'ADMIN';
+  const canManageMembers = currentUserRole === Role.ADMIN || currentUserRole === Role.OWNER;
 
-  const handleInvite = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsInviting(true);
-    setError('');
-
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
-    const role = formData.get('role') as Role;
-
-    try {
-      const response = await fetch(`/api/teams/${team.id}/invitations`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          role,
-        }),
+  const handleRoleChange = async (memberId: string, newRole: Role) => {
+    if (!canManageMembers) {
+      toast({
+        title: 'Permission denied',
+        description: 'You do not have permission to manage team members.',
+        variant: 'destructive',
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to send invitation');
-      }
-
-      (e.target as HTMLFormElement).reset();
-      onMemberUpdate?.();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send invitation');
-    } finally {
-      setIsInviting(false);
+      return;
     }
-  };
 
-  const handleRemoveMember = async (memberId: string) => {
-    try {
-      const response = await fetch(`/api/teams/${team.id}/members/${memberId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to remove member');
-      }
-
-      onMemberUpdate?.();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to remove member');
-    }
-  };
-
-  const handleUpdateRole = async (memberId: string, newRole: Role) => {
+    setIsLoading(true);
     try {
       const response = await fetch(`/api/teams/${team.id}/members/${memberId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          role: newRole,
-        }),
+        body: JSON.stringify({ role: newRole }),
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to update role');
+        throw new Error('Failed to update member role');
       }
 
-      onMemberUpdate?.();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update member role');
+      onUpdate?.();
+      toast({
+        title: 'Role updated',
+        description: 'Team member role has been updated successfully.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update team member role.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    if (!canManageMembers) {
+      toast({
+        title: 'Permission denied',
+        description: 'You do not have permission to manage team members.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!confirm('Are you sure you want to remove this member?')) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`/api/teams/${team.id}/members/${memberId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to remove member');
+      }
+
+      onUpdate?.();
+      toast({
+        title: 'Member removed',
+        description: 'Team member has been removed successfully.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to remove team member.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      {canManageMembers && (
-        <form onSubmit={handleInvite} className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            <div className="col-span-2">
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Email
-              </label>
-              <input
-                type="email"
-                name="email"
-                id="email"
-                required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-                placeholder="member@example.com"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="role"
-                className="block text-sm font-medium text-gray-700"
-              >
+    <div className="space-y-4">
+      <h2 className="text-xl font-semibold">Team Members</h2>
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead>
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Member
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Role
-              </label>
-              <select
-                name="role"
-                id="role"
-                required
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-              >
-                <option value="MEMBER">Member</option>
-                <option value="ADMIN">Admin</option>
-                {currentUserRole === 'OWNER' && (
-                  <option value="OWNER">Owner</option>
-                )}
-              </select>
-            </div>
-          </div>
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={isInviting}
-              className="inline-flex justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
-            >
-              {isInviting ? 'Sending...' : 'Send Invitation'}
-            </button>
-          </div>
-        </form>
-      )}
-
-      {error && (
-        <div className="rounded-md bg-red-50 p-4">
-          <p className="text-sm text-red-700">{error}</p>
-        </div>
-      )}
-
-      <div className="mt-6">
-        <h3 className="text-lg font-medium">Team Members</h3>
-        <div className="mt-4 divide-y divide-gray-200">
-          {team.members.map(member => (
-            <div
-              key={member.id}
-              className="flex items-center justify-between py-4"
-            >
-              <div>
-                <p className="text-sm font-medium text-gray-900">
-                  {member.user.name || member.user.email}
-                </p>
-                <p className="text-sm text-gray-500">{member.user.email}</p>
-              </div>
-              <div className="flex items-center space-x-4">
-                {canManageMembers && member.userId !== session?.user?.id && (
-                  <>
+              </th>
+              {canManageMembers && (
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              )}
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {team.members.map((member) => (
+              <tr key={member.id}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    {member.user.image && (
+                      <img
+                        className="h-8 w-8 rounded-full"
+                        src={member.user.image}
+                        alt={member.user.name || 'User avatar'}
+                      />
+                    )}
+                    <div className="ml-4">
+                      <div className="text-sm font-medium text-gray-900">
+                        {member.user.name || 'Unnamed User'}
+                      </div>
+                      <div className="text-sm text-gray-500">{member.user.email}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {canManageMembers && member.role !== Role.OWNER ? (
                     <select
+                      className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
                       value={member.role}
-                      onChange={e => handleUpdateRole(member.id, e.target.value as Role)}
-                      className="rounded-md border border-gray-300 px-3 py-1 text-sm"
+                      onChange={(e) => handleRoleChange(member.id, e.target.value as Role)}
+                      disabled={isLoading}
                     >
-                      <option value="MEMBER">Member</option>
-                      <option value="ADMIN">Admin</option>
-                      {currentUserRole === 'OWNER' && (
-                        <option value="OWNER">Owner</option>
-                      )}
+                      {Object.values(Role)
+                        .filter((role) => role !== Role.OWNER)
+                        .map((role) => (
+                          <option key={role} value={role}>
+                            {role}
+                          </option>
+                        ))}
                     </select>
-                    <button
-                      onClick={() => handleRemoveMember(member.id)}
-                      className="text-sm text-red-600 hover:text-red-700"
-                    >
-                      Remove
-                    </button>
-                  </>
+                  ) : (
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                      {member.role}
+                    </span>
+                  )}
+                </td>
+                {canManageMembers && (
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    {member.role !== Role.OWNER && (
+                      <button
+                        onClick={() => handleRemoveMember(member.id)}
+                        disabled={isLoading}
+                        className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </td>
                 )}
-                {!canManageMembers && (
-                  <span className="text-sm text-gray-500">{member.role}</span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
-}
+};
+
+export default TeamMembers;

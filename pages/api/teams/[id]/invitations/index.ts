@@ -117,28 +117,21 @@ async function createInvitation(req: NextApiRequest, res: NextApiResponse, sessi
     // Create invitation
     const invitation = await prisma.invitation.create({
       data: {
-        teamId,
         email,
-        role: role as Role,
-        token: crypto.randomBytes(32).toString('hex'),
+        role,
+        teamId,
         inviterId: session.user.id,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        token: crypto.randomBytes(32).toString('hex'),
       },
       include: {
+        inviter: true,
         team: true,
-        inviter: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-          },
-        },
       },
     });
 
     // Send invitation email
-    await emailService.sendTeamInvitation(invitation);
+    await emailService.sendTeamInvitationEmail(email, invitation.team.name, invitation.inviter.name || invitation.inviter.email);
 
     return res.status(201).json(invitation);
   } catch (error) {

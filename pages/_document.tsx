@@ -27,7 +27,12 @@ class MyDocument extends Document {
             rel="stylesheet"
             href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
             media="print"
-            onLoad="this.media='all'"
+            onLoad={() => {
+              const link = document.querySelector('link[href*="Inter"]');
+              if (link) {
+                (link as HTMLLinkElement).media = 'all';
+              }
+            }}
           />
           
           {/* Preload critical assets */}

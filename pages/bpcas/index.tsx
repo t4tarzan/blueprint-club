@@ -64,11 +64,11 @@ const programData = {
     'Creative skill development'
   ],
   schedule: {
-    title: 'Program Schedule',
+    days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
     times: [
-      'Weekday Sessions: 4:30 PM - 7:30 PM',
-      'Weekend Projects: Flexible 2-hour slots',
-      'Online Learning: 24/7 Access'
+      '4:30 PM - 7:30 PM',
+      'Flexible 2-hour slots',
+      '24/7 Access'
     ]
   },
   certifications: [

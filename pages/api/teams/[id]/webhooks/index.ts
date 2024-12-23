@@ -1,66 +1,96 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getSession } from 'next-auth/react';
-import { WebhookService } from '../../../../../lib/webhook/webhook-service';
-import { hasTeamRole } from '../../../../../lib/boxyhq/utils';
+import { getServerSession } from 'next-auth';
+import { WebhookService } from '@/lib/webhook/webhook-service';
+import { z } from 'zod';
+import { rateLimit } from '@/lib/rate-limit';
+import { authOptions } from '@/lib/auth/config';
+
+const webhookService = WebhookService.getInstance();
+
+const limiter = rateLimit({
+  interval: 60 * 1000, // 1 minute
+  uniqueTokenPerInterval: 500,
+});
+
+const webhookSchema = z.object({
+  url: z.string().url('Invalid URL'),
+  description: z.string().optional(),
+  events: z.array(z.string()).min(1, 'At least one event must be selected'),
+  isActive: z.boolean().optional(),
+  secret: z.string().optional(),
+});
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const session = await getSession({ req });
+  try {
+    await limiter.check(res, 10, req.socket.remoteAddress || 'unknown'); // 10 requests per minute per IP
+  } catch {
+    return res.status(429).json({ error: 'Too many requests' });
+  }
 
+  const session = await getServerSession(req, res, authOptions);
   if (!session?.user) {
-    return res.status(401).json({ message: 'Unauthorized' });
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
   const teamId = req.query.id as string;
-
-  // Check if user has permission to manage webhooks
-  const hasPermission = await hasTeamRole({
-    userId: session.user.id,
-    teamId,
-    roles: ['OWNER', 'ADMIN'],
-  });
-
-  if (!hasPermission) {
-    return res.status(403).json({ message: 'Insufficient permissions' });
+  const team = session.user.teams.find((t) => t.id === teamId);
+  if (!team) {
+    return res.status(403).json({ error: 'Forbidden' });
   }
-
-  const webhookService = WebhookService.getInstance();
 
   switch (req.method) {
     case 'GET':
-      try {
-        const webhooks = await webhookService.listWebhooks(teamId);
-        return res.status(200).json(webhooks);
-      } catch (error) {
-        console.error('Error listing webhooks:', error);
-        return res.status(500).json({ message: 'Internal server error' });
-      }
-
+      return handleGet(req, res, teamId);
     case 'POST':
-      try {
-        const { url, description, events, isActive } = req.body;
-
-        if (!url || !events || !Array.isArray(events)) {
-          return res.status(400).json({ message: 'Invalid webhook data' });
-        }
-
-        const webhook = await webhookService.createWebhook(teamId, session.user.id, {
-          url,
-          description,
-          events,
-          isActive,
-        });
-
-        return res.status(201).json(webhook);
-      } catch (error) {
-        console.error('Error creating webhook:', error);
-        return res.status(500).json({ message: 'Internal server error' });
-      }
-
+      return handlePost(req, res, teamId);
     default:
-      res.setHeader('Allow', ['GET', 'POST']);
-      return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
+      return res.status(405).json({ error: 'Method not allowed' });
+  }
+}
+
+async function handleGet(
+  req: NextApiRequest,
+  res: NextApiResponse,
+  teamId: string
+) {
+  try {
+    const webhooks = await webhookService.getWebhooks(teamId);
+    return res.status(200).json(webhooks);
+  } catch (error) {
+    console.error('Error getting webhooks:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+async function handlePost(
+  req: NextApiRequest,
+  res: NextApiResponse,
+  teamId: string
+) {
+  try {
+    const result = webhookSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(400).json({
+        error: 'Invalid request body',
+        details: result.error.issues,
+      });
+    }
+
+    const webhook = await webhookService.createWebhook({
+      teamId,
+      ...result.data,
+      isActive: result.data.isActive ?? true,
+    });
+
+    return res.status(201).json(webhook);
+  } catch (error) {
+    console.error('Error creating webhook:', error);
+    if (error instanceof Error) {
+      return res.status(400).json({ error: error.message });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }

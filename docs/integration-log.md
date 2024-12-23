@@ -546,345 +546,141 @@ npm run jackson
    - Added necessary BoxyHQ environment variables
    - Configured SAML Jackson service
 
-## 2024-12-23: Webhook Components TypeScript Fixes
+## Integration Progress Log
 
-### Changes Made
-1. Fixed `webhook-form.tsx`:
-   - Added proper type imports from `@/lib/types`
-   - Implemented proper form handling with TypeScript types
-   - Added proper styling using Tailwind CSS
-   - Fixed checkbox component integration
+## 2024-12-24
 
-2. Fixed `webhook-list.tsx`:
-   - Added proper type imports
-   - Improved component structure and error handling
-   - Added proper TypeScript types for props and state
-   - Enhanced UI with better spacing and layout
+### Authentication and Authorization
+- Implemented and fixed NextAuth configuration
+- Added proper password comparison using bcrypt
+- Updated verification token handling
 
-3. Fixed `webhook-delivery-list.tsx`:
-   - Added proper type imports
-   - Implemented loading and error states
-   - Added proper date formatting
-   - Enhanced UI with status colors and better layout
+### Team Management
+- Fixed Role enum usage in team service
+- Improved team member management functionality
+- Added proper type checking for team operations
 
-4. Added `checkbox.tsx` component:
-   - Implemented using Radix UI primitives
-   - Added proper styling and accessibility features
+### Email Service
+- Temporarily disabled non-essential email notifications
+- Maintained core verification and password reset functionality
+- Added stubs for team invitation and role change notifications
 
-### Remaining Issues
-1. TypeScript errors in other components and files:
-   - `lib/auth/config.ts`: Implicit any type errors
-   - `lib/auth/prismaAdapter.ts`: Implicit any type errors
-   - `lib/auth/providers/boxyhq-saml.ts`: Type mismatches in profile handling
-   - `lib/boxyhq/audit-service.ts`: Implicit any type errors
-   - `lib/boxyhq/saml-service.ts`: Module import and type errors
-   - `lib/boxyhq/scim-service.ts`: Missing type declarations and implicit any errors
-   - `pages/api/auth/[...nextauth].ts`: Type mismatches and missing properties
-   - Various other files with implicit any types and missing type declarations
+### Webhook System
+- Implemented basic webhook functionality
+- Added webhook delivery tracking
+- Fixed parameter count issues in webhook endpoints
 
-### Next Steps
-1. Fix remaining TypeScript errors in auth-related files
-2. Fix TypeScript errors in BoxyHQ integration files
-3. Fix TypeScript errors in API routes
-4. Address any Vercel deployment issues that arise
+### SAML & SCIM Integration
+- Temporarily disabled full SAML/SCIM functionality for initial deployment
+- Added proper type definitions for future implementation
+- Created stub implementations to maintain type safety
 
-### Notes
-- The webhook components now have proper type safety and improved UI
-- Need to ensure all external dependencies are properly typed
-- May need to update NextAuth.js types to match our custom implementation
-- Should consider adding proper error boundaries for better error handling
+### Audit Service
+- Fixed audit log listing functionality
+- Removed unnecessary user includes to resolve type errors
+- Maintained basic audit logging capabilities
 
-## Testing Environment Setup (2024-12-23)
+### Program Management
+- Updated program detail card component
+- Fixed type definitions for program features
+- Added proper image handling
 
-### Configuration Updates
-- Updated `jest.setup.js` with extended Jest matchers and mocks for:
-  - Document-related assertions
-  - Function call assertions
-  - Equality and containment checks
-  - Next.js router mocks
-  - Next-auth mocks
-  - Environment variables
+## Next Steps
+1. Re-enable SAML/SCIM functionality when needed
+2. Implement full email notification system
+3. Complete webhook system implementation
+4. Add comprehensive error handling
+5. Implement proper RBAC (Role-Based Access Control)
 
-### Dependencies Added
-- Installed core testing packages:
-  - `jest`
-  - `jest-environment-jsdom`
-  - `@swc/core`
-  - `@swc/jest`
-  - `identity-obj-proxy`
-  - `jest-watch-typeahead`
+## 2024-12-24 03:16:00 IST
+### Phase 3.1: Webhook Form Type Fixes
 
-### Jest Configuration
-- Updated `jest.config.js` with:
-  - Module path mappings for all project directories
-  - Test patterns focused on main application components
-  - Coverage thresholds set to 80% for all metrics
-  - SWC-based transformation setup
-  - Proper handling of module naming collisions
-  - Exclusion patterns for addon test fixtures
+#### 1. UI Component Type Improvements
+1. Added error handling to UI components:
+   ```typescript
+   // Input component error prop
+   export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+     error?: string;
+   }
 
-### Next Steps
-- Create initial test suites for core components
-- Set up CI/CD pipeline integration for automated testing
-- Implement integration tests for critical user flows
-
-## Build Process Improvements (2024-12-23)
-
-### Vercel Build Error Prevention
-- Implemented comprehensive pre-build checks to catch Vercel deployment issues locally
-- Added type checking and linting scripts to match Vercel's strict build process
-- Configured Husky for pre-commit hooks to ensure code quality
-
-### New Development Scripts
-- Added `type-check` script for TypeScript validation
-- Created `prebuild` script combining type checking and linting
-- Implemented `vercel-build` script to mirror Vercel's build process
-
-### Documentation
-- Created detailed `prevercel.md` guide for preventing Vercel build issues
-- Updated approach documentation with build process best practices
-- Added build process section to integration plan
-
-For detailed information about preventing Vercel build issues, see [Pre-Vercel Deployment Guide](./prevercel.md).
-
-## 2024-12-23 01:30:00 IST
-### UI/UX Improvements
-
-#### 1. Navigation and Layout Updates
-- Updated Layout component to handle different navigation states:
-  - Main navbar hidden on dashboard and social pages
-  - Dashboard-specific navbar visible only in dashboard area
-  - Improved navigation hierarchy and user experience
-
-#### 2. Program Pages Refinements
-- Removed duplicate navbars from program pages:
-  - BPC Adults
-  - BPC Schooling
-  - BPCAS
-  - BPC Academy
-- Maintained consistent hero sections
-- Added proper spacing for fixed navbar
-
-#### 3. Dashboard Enhancements
-- Fixed DashboardLayout import issues
-- Improved dashboard UI with:
-  - Clean stat cards
-  - Better color schemes
-  - Improved typography
-  - Proper spacing and layout
-
-#### 4. Footer Integration
-- Added global footer component
-- Configured footer visibility based on page context
-- Maintained consistent styling across pages
-
-#### 5. Current Status
-1. Navigation:
-   - Main navbar: Home, Programs, About, Contact
-   - Dashboard navbar: Dashboard, Social, User Profile, Sign Out
-   - Proper separation between public and dashboard areas
-
-2. Layout Management:
-   - Conditional rendering based on route
-   - Proper spacing for fixed navbars
-   - Consistent styling across all pages
-
-3. Next Steps:
-   - Complete social page implementation
-   - Add more dashboard features
-   - Enhance user profile section
-
-## 2023-12-23: Refactoring and Type Safety Improvements
-
-### Changes Made
-
-1. **Removed Enterprise Features for Next Version**
-   - Removed SAML SSO configuration and components
-   - Removed SCIM provisioning functionality
-   - Cleaned up environment variables and configuration
-   - Updated schema to remove enterprise-related fields
-
-2. **Type Safety Improvements**
-   - Added proper type definitions in `types/index.ts`
-   - Added `Role` type definition: `'ADMIN' | 'OWNER' | 'MEMBER'`
-   - Updated User and TeamMember interfaces to use Role type
-   - Fixed type imports across components to use local types instead of @prisma/client
-
-3. **Error Handling Improvements**
-   - Added proper type checking for caught errors
-   - Added specific error messages for different operations
-   - Improved error handling in TeamMembers component
-   - Added proper error message fallbacks
-
-4. **Component Simplification**
-   - Simplified TeamSettings component
-   - Removed tabs and complex navigation
-   - Focused on core team management features
-   - Improved component organization
-
-### Commits Made
-1. `fix: correct import path for useRouter`
-   - Changed import from 'next-router' to 'next/router'
-   - Fixed TypeScript module resolution error
-
-2. `fix: update CreateTeamForm props to match InputWithLabel`
-   - Fixed type error with InputWithLabel props
-   - Improved form validation with proper error handling
-   - Added proper type for domain field
-
-3. `refactor: remove SAML SSO for next version`
-   - Removed SAMLConfig component
-   - Removed SAML API routes
-   - Removed SAML configuration from environment files
-   - Removed SAML fields from Team model
-
-4. `refactor: remove SCIM for next version`
-   - Removed SCIMConfig component
-   - Removed SCIM API routes and endpoints
-   - Removed SCIM provisioning services
-
-5. `fix: update type definitions`
-   - Added Role type definition
-   - Updated User and TeamMember interfaces
-   - Fixed type imports in team components
-
-6. `fix: improve error handling in TeamMembers`
-   - Added type checking for caught errors
-   - Added specific error messages
-   - Fixed TypeScript error with unknown type
-
-7. `refactor: simplify TeamSettings component`
-   - Removed SAML and SSO references
-   - Removed tabs and simplified UI
-   - Improved error handling
-   - Removed unused features for next version
-
-### Next Steps
-1. **Testing**
-   - Test all team management functionality
-   - Verify error handling works as expected
-   - Check form validation and user feedback
-
-2. **Documentation**
-   - Update API documentation to reflect removed features
-   - Document type system for future reference
-   - Update environment variable documentation
-
-3. **Future Features**
-   - Plan SAML SSO implementation for next version
-   - Design SCIM provisioning architecture
-   - Consider additional enterprise features
-
-### Notes
-- Enterprise features (SAML, SCIM) will be implemented in the next version
-- Current focus is on core team management functionality
-- Type safety and error handling have been significantly improved
-- UI has been simplified for better user experience
-
-## SAML Jackson Integration Troubleshooting (Dec 22, 2024)
-
-### Issue
-SAML Jackson service was not starting properly on port 5225, resulting in a 404 error when accessing the service.
-
-### Investigation Steps
-1. Initial state:
-   - SAML Jackson package (@boxyhq/saml-jackson@1.34.7) installed
-   - Service not starting with default configuration
-
-2. Environment Configuration:
-   ```env
-   BOXYHQ_SAML_JACKSON_URL=http://localhost:5225
-   BOXYHQ_ENTERPRISE_SLUG=blueprint-club
-   BOXYHQ_ADMIN_EMAIL=admin@blueprintclub.com
-   SAML_DATABASE_URL=postgresql://username:password@localhost:5432/blueprint_club_saml?schema=public
-   SAML_ADMIN_EMAIL=admin@blueprintclub.com
-   SAML_ADMIN_API_KEY=your-admin-api-key
+   // Textarea component error prop
+   export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+     error?: string;
+   }
    ```
 
-3. Attempted Solutions:
-   - Tried running SAML Jackson directly using npx
-   - Attempted global installation
-   - Created custom script to initialize SAML Jackson
+2. Updated component styling:
+   - Added red border for validation errors
+   - Added error message display below input
+   - Improved focus states and transitions
 
-### Solution
-Created a dedicated script (`scripts/jackson.js`) to properly initialize SAML Jackson:
+#### 2. Webhook Service Updates
+1. Added team-specific webhook methods:
+   ```typescript
+   // Find webhooks by team
+   async findByTeam(teamId: string): Promise<Array<Webhook & { name: string }>> {
+     const webhooks = await prisma.webhook.findMany({
+       where: { teamId },
+     });
+     return webhooks.map(webhook => ({
+       ...webhook,
+       name: webhook.description || webhook.url,
+     }));
+   }
 
-```javascript
-const express = require('express');
-const jackson = require('@boxyhq/saml-jackson');
+   // Create webhook with proper types
+   async create(data: {
+     name: string;
+     url: string;
+     description?: string;
+     events: string[];
+     isActive: boolean;
+     teamId: string;
+   }): Promise<Webhook>
+   ```
 
-async function startServer() {
-  const app = express();
-  const port = 5225;
+#### 3. Webhook Page Type Safety
+1. Improved type definitions:
+   ```typescript
+   interface WebhookWithName extends Webhook {
+     name: string;
+   }
 
-  const config = {
-    externalUrl: process.env.BOXYHQ_SAML_JACKSON_URL || 'http://localhost:5225',
-    samlPath: '/api/v1/saml',
-    db: {
-      engine: 'sql',
-      type: 'postgres',
-      url: process.env.SAML_DATABASE_URL || 'postgresql://username:password@localhost:5432/blueprint_club_saml?schema=public',
-    },
-    saml: {
-      callback: process.env.NEXTAUTH_URL || 'http://localhost:3000/api/auth/callback/boxyhq-saml',
-    },
-    oidc: {
-      clientSecretVerifier: process.env.OIDC_CLIENT_SECRET_VERIFIER,
-    },
-    apiKey: process.env.SAML_ADMIN_API_KEY,
-  };
+   interface WebhooksPageProps {
+     webhooks: WebhookWithName[];
+     teamId: string;
+   }
+   ```
 
-  try {
-    const jacksonInstance = await jackson.default(config);
-    app.use('/', jacksonInstance);
+2. Fixed state management:
+   - Changed `null` to `undefined` for selected webhook
+   - Added proper type for webhook array state
+   - Improved form submission type safety
 
-    app.listen(port, () => {
-      console.log(`SAML Jackson service started on port ${port}`);
-    });
-  } catch (error) {
-    console.error('Failed to start SAML Jackson:', error);
-    process.exit(1);
-  }
-}
+#### 4. Common Type Issues & Solutions
+1. UI Component Props:
+   - Always extend React's HTML attribute interfaces
+   - Add custom props with optional marker (?) when appropriate
+   - Use proper event types for handlers
 
-startServer();
-```
+2. Form State:
+   - Prefer `undefined` over `null` for optional values
+   - Use interface extension for adding computed fields
+   - Ensure proper typing for form values and handlers
 
-Updated `package.json` script:
-```json
-{
-  "scripts": {
-    "jackson": "node scripts/jackson.js"
-  }
-}
-```
+3. API Integration:
+   - Define request/response types explicitly
+   - Use proper type narrowing with type guards
+   - Handle computed fields at the service layer
 
-### Running the Service
-To start SAML Jackson:
-```bash
-npm run jackson
-```
+#### 5. Testing & Validation
+1. Run type checks:
+   ```bash
+   npm run type-check
+   ```
 
-### Next Steps
-1. Verify SAML Jackson is running by accessing `http://localhost:5225/api/v1/health`
-2. Configure SSO settings in the application
-3. Test SSO login flow with mock IdP
-
-### Next Steps
-1. Remove existing auth components and routes
-2. Verify BoxyHQ stack components from documentation
-3. Configure BoxyHQ components using mock data
-4. Customize UI and content
-
-### Issues Encountered & Resolutions
-1. Module Resolution Issues
-   - Fixed by updating tsconfig.json with proper path aliases
-   - Added missing dependencies
-
-2. Authentication Components
-   - Replaced DaisyUI components with Tailwind classes
-   - Updated button components for consistent styling
-
-3. Environment Configuration
-   - Added necessary BoxyHQ environment variables
-   - Configured SAML Jackson service
+2. Common type errors to watch for:
+   - Incompatible null/undefined assignments
+   - Missing props in component interfaces
+   - Incorrect event handler types
+   - Type mismatches in API responses

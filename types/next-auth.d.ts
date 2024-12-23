@@ -9,6 +9,7 @@ declare module 'next-auth' {
       name: string | null;
       image: string | null;
       emailVerified: Date | null;
+      membershipTier: string;
       teams?: {
         id: string;
         name: string;
@@ -24,6 +25,7 @@ declare module 'next-auth' {
     name: string | null;
     image: string | null;
     emailVerified: Date | null;
+    membershipTier: string;
     teams?: {
       id: string;
       name: string;
@@ -41,6 +43,7 @@ declare module 'next-auth/jwt' {
     name: string | null;
     image: string | null;
     emailVerified: Date | null;
+    membershipTier: string;
     teams?: {
       id: string;
       name: string;

@@ -22,6 +22,7 @@ const customJestConfig = {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
   testMatch: [
+    '<rootDir>/__tests__/**/*.test.{ts,tsx}',
     '<rootDir>/components/**/*.test.{ts,tsx}',
     '<rootDir>/lib/**/*.test.{ts,tsx}',
     '<rootDir>/pages/**/*.test.{ts,tsx}',

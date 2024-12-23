@@ -21,17 +21,22 @@ interface ProgramDetailCardProps {
   title: string;
   subtitle: string;
   description: string;
-  features: Feature[];
+  features: Array<{
+    title: string;
+    description: string;
+    icon: any;
+  }>;
   phases?: Phase[];
   benefits: string[];
   schedule?: {
-    title: string;
+    days: string[];
     times: string[];
   };
   certifications?: string[];
   showSlideshow?: boolean;
   overviewImage?: string;
   youtubeVideoId?: string;
+  image?: string;
 }
 
 const variants = {
@@ -113,6 +118,7 @@ const ProgramDetailCard: React.FC<ProgramDetailCardProps> = ({
   showSlideshow = false,
   overviewImage,
   youtubeVideoId,
+  image,
 }) => {
   const style = variants[variant];
 
@@ -201,14 +207,24 @@ const ProgramDetailCard: React.FC<ProgramDetailCardProps> = ({
         {/* Schedule */}
         {schedule && (
           <div className="p-8 border-b">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">{schedule.title}</h3>
+            <h3 className="text-xl font-semibold text-gray-900 mb-6">{schedule.days[0]} Schedule</h3>
             <div className="space-y-2">
-              {schedule.times.map((time, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <ChevronRightIcon className={`h-5 w-5 ${style.accent} text-white rounded`} />
-                  <span className="text-gray-600">{time}</span>
-                </div>
-              ))}
+              <div>
+                <h5 className="font-medium">Days</h5>
+                <ul className="list-inside list-disc">
+                  {schedule.days.map((day, index) => (
+                    <li key={index}>{day}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h5 className="font-medium">Times</h5>
+                <ul className="list-inside list-disc">
+                  {schedule.times.map((time, index) => (
+                    <li key={index}>{time}</li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
         )}
@@ -219,6 +235,17 @@ const ProgramDetailCard: React.FC<ProgramDetailCardProps> = ({
             <img
               src={overviewImage}
               alt="Program Overview"
+              className="w-full h-auto rounded-lg shadow-lg"
+            />
+          </div>
+        )}
+
+        {/* Image */}
+        {image && (
+          <div className="p-8 border-b">
+            <img
+              src={image}
+              alt="Program Image"
               className="w-full h-auto rounded-lg shadow-lg"
             />
           </div>

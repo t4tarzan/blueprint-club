@@ -1,13 +1,13 @@
+import { NextApiRequest, NextApiResponse } from 'next';
 import { buffer } from 'micro';
-import type { NextApiRequest, NextApiResponse } from 'next';
 import Stripe from 'stripe';
 import { prisma } from '@/lib/prisma';
+import env from '@/lib/env';
+import { SubscriptionStatus } from '@prisma/client';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const stripe = new Stripe(env.stripeSecretKey, {
   apiVersion: '2024-12-18.acacia',
 });
-
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export const config = {
   api: {
@@ -15,64 +15,101 @@ export const config = {
   },
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+    res.setHeader('Allow', 'POST');
+    return res.status(405).end('Method Not Allowed');
+  }
+
+  const signature = req.headers['stripe-signature'];
+
+  if (!signature) {
+    return res.status(400).json({ message: 'Missing stripe-signature header' });
   }
 
   const buf = await buffer(req);
-  const sig = req.headers['stripe-signature']!;
-
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(buf, sig, webhookSecret);
-  } catch (err: any) {
-    console.error(`Webhook Error: ${err.message}`);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    event = stripe.webhooks.constructEvent(
+      buf,
+      signature,
+      env.stripeWebhookSecret
+    );
+  } catch (err) {
+    console.error('Error verifying webhook signature:', err);
+    return res.status(400).json({ message: 'Invalid signature' });
   }
 
   try {
     switch (event.type) {
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated': {
-        const subscription = event.data.object as Stripe.Subscription;
-        await prisma.subscription.upsert({
-          where: { stripeId: subscription.id },
-          create: {
-            stripeId: subscription.id,
-            userId: subscription.metadata.userId,
-            status: subscription.status.toUpperCase() as any,
-            priceId: subscription.items.data[0].price.id,
-            quantity: subscription.items.data[0].quantity || 1,
-            currentPeriodStart: new Date(subscription.current_period_start * 1000),
-            currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-            cancelAtPeriodEnd: subscription.cancel_at_period_end,
-          },
-          update: {
-            status: subscription.status.toUpperCase() as any,
-            priceId: subscription.items.data[0].price.id,
-            quantity: subscription.items.data[0].quantity || 1,
-            currentPeriodStart: new Date(subscription.current_period_start * 1000),
-            currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-            cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const { customer, subscription } = session;
+
+        if (!customer || !subscription) {
+          return res.status(400).json({ message: 'Missing customer or subscription' });
+        }
+
+        const sub = await stripe.subscriptions.retrieve(subscription as string);
+        const price = await stripe.prices.retrieve(sub.items.data[0].price.id);
+
+        await prisma.subscription.create({
+          data: {
+            stripeId: subscription as string,
+            userId: session.client_reference_id!,
+            planId: price.lookup_key || 'pro',
+            status: sub.status.toUpperCase() as SubscriptionStatus,
+            priceId: sub.items.data[0].price.id,
+            quantity: sub.items.data[0].quantity || 1,
+            currentPeriodStart: new Date(sub.current_period_start * 1000),
+            currentPeriodEnd: new Date(sub.current_period_end * 1000),
+            cancelAtPeriodEnd: sub.cancel_at_period_end,
           },
         });
+
         break;
       }
-      case 'customer.subscription.deleted': {
+
+      case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
+
         await prisma.subscription.update({
           where: { stripeId: subscription.id },
-          data: { status: 'CANCELED' },
+          data: {
+            status: subscription.status.toUpperCase() as SubscriptionStatus,
+            priceId: subscription.items.data[0].price.id,
+            quantity: subscription.items.data[0].quantity || 1,
+            currentPeriodStart: new Date(subscription.current_period_start * 1000),
+            currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+            cancelAtPeriodEnd: subscription.cancel_at_period_end,
+          },
         });
+
+        break;
+      }
+
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription;
+
+        await prisma.subscription.update({
+          where: { stripeId: subscription.id },
+          data: {
+            status: subscription.status.toUpperCase() as SubscriptionStatus,
+            cancelAtPeriodEnd: false,
+          },
+        });
+
         break;
       }
     }
+
+    return res.json({ received: true });
   } catch (error) {
     console.error('Error processing webhook:', error);
-    return res.status(500).json({ error: 'Webhook handler failed' });
+    return res.status(500).json({ message: 'Error processing webhook' });
   }
-
-  res.json({ received: true });
 }

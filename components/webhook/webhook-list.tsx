@@ -1,101 +1,112 @@
 import { useState } from 'react';
-import { Webhook, WebhookListProps } from '@/lib/types/webhook';
+import { Webhook } from '@prisma/client';
+import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { WebhookForm } from './webhook-form';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { formatDate } from '@/lib/utils';
 import { useTranslation } from 'next-i18next';
+
+export interface WebhookListProps {
+  webhooks: Webhook[];
+  onDelete: (id: string) => Promise<void>;
+  onUpdate: (webhook: Webhook) => Promise<void>;
+}
 
 export function WebhookList({ webhooks, onDelete, onUpdate }: WebhookListProps) {
   const { t } = useTranslation('common');
-  const [showForm, setShowForm] = useState(false);
-  const [selectedWebhook, setSelectedWebhook] = useState<Webhook | null>(null);
+  const [loading, setLoading] = useState<{ [key: string]: boolean }>({});
 
-  const handleEdit = (webhook: Webhook) => {
-    setSelectedWebhook(webhook);
-    setShowForm(true);
-  };
-
-  const handleDelete = async (webhook: Webhook) => {
-    if (window.confirm(t('webhook.confirmDelete'))) {
-      await onDelete(webhook.id);
+  const handleToggleActive = async (webhook: Webhook) => {
+    try {
+      setLoading((prev) => ({ ...prev, [webhook.id]: true }));
+      await onUpdate({
+        ...webhook,
+        isActive: !webhook.isActive,
+      });
+    } catch (error) {
+      console.error('Error toggling webhook:', error);
+    } finally {
+      setLoading((prev) => ({ ...prev, [webhook.id]: false }));
     }
   };
 
-  const handleFormSubmit = async (data: any) => {
-    if (selectedWebhook && onUpdate) {
-      await onUpdate({ ...selectedWebhook, ...data });
+  const handleDelete = async (id: string) => {
+    if (!confirm(t('webhook.confirmDelete'))) return;
+    try {
+      setLoading((prev) => ({ ...prev, [id]: true }));
+      await onDelete(id);
+    } catch (error) {
+      console.error('Error deleting webhook:', error);
+    } finally {
+      setLoading((prev) => ({ ...prev, [id]: false }));
     }
-    setShowForm(false);
-    setSelectedWebhook(null);
   };
 
-  const handleFormCancel = () => {
-    setShowForm(false);
-    setSelectedWebhook(null);
-  };
-
-  if (showForm) {
+  if (webhooks.length === 0) {
     return (
-      <Card className="p-6">
-        <WebhookForm
-          webhook={selectedWebhook}
-          onSubmit={handleFormSubmit}
-          onCancel={handleFormCancel}
-          events={[]}
-        />
-      </Card>
+      <div className="text-center py-6">
+        <p className="text-gray-500">{t('webhook.noWebhooks')}</p>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {webhooks.map((webhook) => (
-        <Card key={webhook.id} className="p-4">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="font-medium">{webhook.url}</h3>
-              <div className="mt-1 text-sm text-gray-500">
-                <p>Events: {webhook.events.join(', ')}</p>
-                <p>
-                  Status:{' '}
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>URL</TableHead>
+          <TableHead>Description</TableHead>
+          <TableHead>Events</TableHead>
+          <TableHead>Created</TableHead>
+          <TableHead>Active</TableHead>
+          <TableHead>Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {webhooks.map((webhook) => (
+          <TableRow key={webhook.id}>
+            <TableCell className="font-medium">{webhook.url}</TableCell>
+            <TableCell>{webhook.description || '-'}</TableCell>
+            <TableCell>
+              <div className="flex flex-wrap gap-1">
+                {webhook.events.map((event) => (
                   <span
-                    className={`font-medium ${
-                      webhook.active ? 'text-green-600' : 'text-red-600'
-                    }`}
+                    key={event}
+                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100"
                   >
-                    {webhook.active ? t('common.active') : t('common.inactive')}
+                    {event}
                   </span>
-                </p>
+                ))}
               </div>
-            </div>
-
-            <div className="flex space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleEdit(webhook)}
-              >
-                {t('common.edit')}
-              </Button>
+            </TableCell>
+            <TableCell>{formatDate(webhook.createdAt)}</TableCell>
+            <TableCell>
+              <Switch
+                checked={!!webhook.isActive}
+                onCheckedChange={() => handleToggleActive(webhook)}
+                disabled={loading[webhook.id]}
+              />
+            </TableCell>
+            <TableCell>
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={() => handleDelete(webhook)}
+                onClick={() => handleDelete(webhook.id)}
+                disabled={loading[webhook.id]}
               >
                 {t('common.delete')}
               </Button>
-            </div>
-          </div>
-        </Card>
-      ))}
-
-      {webhooks.length === 0 && (
-        <Card className="p-4">
-          <p className="text-center text-gray-500">
-            {t('webhook.noWebhooks')}
-          </p>
-        </Card>
-      )}
-    </div>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }

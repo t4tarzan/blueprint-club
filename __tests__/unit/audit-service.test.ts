@@ -1,179 +1,151 @@
-import { AuditService } from '../../lib/boxyhq/audit-service';
-import { prisma } from '../../lib/prisma';
-import { mockAuditLog } from '../utils/test-utils';
+import { mockTeam, mockUser, mockAuditLog } from '../utils/test-utils';
+import { PrismaClient } from '@prisma/client';
 
 // Mock Prisma
-jest.mock('../../lib/prisma', () => ({
-  prisma: {
-    auditLog: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-      count: jest.fn(),
-    },
-    session: {
-      update: jest.fn(),
-    },
+const mockPrisma = {
+  auditLog: {
+    create: jest.fn(),
+    findMany: jest.fn(),
+    findUnique: jest.fn(),
+    count: jest.fn(),
   },
-}));
+};
+
+jest.mock('../../lib/prisma', () => {
+  return {
+    __esModule: true,
+    default: mockPrisma,
+  };
+});
+
+// Import after mocking
+const { AuditService, AuditLogCategory, AuditLogStatus, AuditLogAction } = require('../../lib/boxyhq/audit-service');
 
 describe('AuditService', () => {
-  let auditService: AuditService;
+  let service: typeof AuditService;
 
   beforeEach(() => {
-    auditService = AuditService.getInstance();
+    service = AuditService.getInstance();
     jest.clearAllMocks();
   });
 
-  describe('log', () => {
+  describe('create', () => {
     it('should create an audit log entry', async () => {
       const logData = {
-        teamId: 'team-1',
-        userId: 'user-1',
-        action: 'user.login' as const,
-        category: 'auth' as const,
-        status: 'success' as const,
-        ipAddress: '127.0.0.1',
-        userAgent: 'Mozilla/5.0',
-        metadata: { key: 'value' },
+        teamId: mockTeam.id,
+        userId: mockUser.id,
+        action: 'TEAM_MEMBER_ADDED' as typeof AuditLogAction,
+        category: AuditLogCategory.TEAM,
+        status: AuditLogStatus.SUCCESS,
+        metadata: { role: 'ADMIN' },
       };
 
-      await auditService.log(logData);
+      mockPrisma.auditLog.create.mockResolvedValue(mockAuditLog);
 
-      expect(prisma.auditLog.create).toHaveBeenCalledWith({
+      const result = await service.create(logData);
+
+      expect(result).toEqual(mockAuditLog);
+      expect(mockPrisma.auditLog.create).toHaveBeenCalledWith({
         data: logData,
       });
     });
+  });
 
-    it('should handle errors gracefully', async () => {
-      const consoleError = jest.spyOn(console, 'error').mockImplementation();
-      (prisma.auditLog.create as jest.Mock).mockRejectedValue(new Error('DB Error'));
+  describe('get', () => {
+    it('should fetch a single audit log by id', async () => {
+      mockPrisma.auditLog.findUnique.mockResolvedValue(mockAuditLog);
 
-      await auditService.log({
-        action: 'user.login',
-        category: 'auth',
-        status: 'success',
+      const result = await service.get(mockAuditLog.id);
+
+      expect(result).toEqual(mockAuditLog);
+      expect(mockPrisma.auditLog.findUnique).toHaveBeenCalledWith({
+        where: { id: mockAuditLog.id },
+        include: {
+          user: true,
+          team: true,
+        },
       });
-
-      expect(consoleError).toHaveBeenCalled();
-      consoleError.mockRestore();
     });
   });
 
-  describe('getLogs', () => {
+  describe('list', () => {
     it('should fetch audit logs with filters', async () => {
       const filters = {
-        teamId: 'team-1',
-        category: 'auth' as const,
-        page: 1,
-        limit: 10,
+        teamId: mockTeam.id,
+        category: AuditLogCategory.TEAM,
+        status: AuditLogStatus.SUCCESS,
       };
 
-      (prisma.auditLog.findMany as jest.Mock).mockResolvedValue([mockAuditLog]);
-      (prisma.auditLog.count as jest.Mock).mockResolvedValue(1);
+      mockPrisma.auditLog.findMany.mockResolvedValue([mockAuditLog]);
+      mockPrisma.auditLog.count.mockResolvedValue(1);
 
-      const result = await auditService.getLogs(filters);
-
-      expect(prisma.auditLog.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            teamId: filters.teamId,
-            category: filters.category,
-          }),
-          skip: 0,
-          take: filters.limit,
-        })
-      );
+      const result = await service.list(filters);
 
       expect(result).toEqual({
         logs: [mockAuditLog],
         pagination: {
           total: 1,
-          pages: 1,
           page: 1,
           limit: 10,
         },
+      });
+      expect(mockPrisma.auditLog.findMany).toHaveBeenCalledWith({
+        where: {
+          teamId: mockTeam.id,
+          category: 'TEAM',
+          status: 'SUCCESS',
+        },
+        include: {
+          user: true,
+          team: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 10,
+        skip: 0,
       });
     });
 
     it('should handle date filters correctly', async () => {
       const startDate = new Date('2024-01-01');
-      const endDate = new Date('2024-12-31');
+      const endDate = new Date('2024-01-31');
 
-      await auditService.getLogs({
+      mockPrisma.auditLog.findMany.mockResolvedValue([mockAuditLog]);
+      mockPrisma.auditLog.count.mockResolvedValue(1);
+
+      const result = await service.list({
+        teamId: mockTeam.id,
         startDate,
         endDate,
       });
 
-      expect(prisma.auditLog.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            createdAt: {
-              gte: startDate,
-              lte: endDate,
-            },
-          }),
-        })
-      );
-    });
-  });
-
-  describe('exportLogs', () => {
-    it('should export audit logs to CSV format', async () => {
-      (prisma.auditLog.findMany as jest.Mock).mockResolvedValue([mockAuditLog]);
-
-      const csv = await auditService.exportLogs({
-        teamId: 'team-1',
+      expect(result).toEqual({
+        logs: [mockAuditLog],
+        pagination: {
+          total: 1,
+          page: 1,
+          limit: 10,
+        },
       });
-
-      expect(typeof csv).toBe('string');
-      expect(csv).toContain('Timestamp,Action,Category,Status');
-      expect(csv).toContain(mockAuditLog.action);
-      expect(csv).toContain(mockAuditLog.category);
-      expect(csv).toContain(mockAuditLog.status);
-    });
-  });
-
-  describe('trackSessionActivity', () => {
-    it('should update session last active timestamp', async () => {
-      const sessionToken = 'session-token';
-      await auditService.trackSessionActivity(sessionToken);
-
-      expect(prisma.session.update).toHaveBeenCalledWith({
-        where: { sessionToken },
-        data: { lastActive: expect.any(Date) },
+      expect(mockPrisma.auditLog.findMany).toHaveBeenCalledWith({
+        where: {
+          teamId: mockTeam.id,
+          createdAt: {
+            gte: startDate,
+            lte: endDate,
+          },
+        },
+        include: {
+          user: true,
+          team: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 10,
+        skip: 0,
       });
-    });
-
-    it('should handle errors gracefully', async () => {
-      const consoleError = jest.spyOn(console, 'error').mockImplementation();
-      (prisma.session.update as jest.Mock).mockRejectedValue(new Error('DB Error'));
-
-      await auditService.trackSessionActivity('session-token');
-
-      expect(consoleError).toHaveBeenCalled();
-      consoleError.mockRestore();
-    });
-  });
-
-  describe('revokeSession', () => {
-    it('should revoke a session', async () => {
-      const sessionToken = 'session-token';
-      await auditService.revokeSession(sessionToken);
-
-      expect(prisma.session.update).toHaveBeenCalledWith({
-        where: { sessionToken },
-        data: { isRevoked: true },
-      });
-    });
-
-    it('should handle errors gracefully', async () => {
-      const consoleError = jest.spyOn(console, 'error').mockImplementation();
-      (prisma.session.update as jest.Mock).mockRejectedValue(new Error('DB Error'));
-
-      await auditService.revokeSession('session-token');
-
-      expect(consoleError).toHaveBeenCalled();
-      consoleError.mockRestore();
     });
   });
 });

@@ -1,127 +1,158 @@
 import { prisma } from '../prisma';
-import type { Team, User } from '@prisma/client';
-
-/**
- * Get team slug from domain
- */
-export function getTeamSlugFromDomain(hostname: string): string | null {
-  // Remove port if present
-  const domain = hostname.split(':')[0];
-  
-  // Check if it's a custom domain
-  if (!domain.includes('localhost') && !domain.includes('.vercel.app')) {
-    return domain;
-  }
-  
-  return null;
-}
+import { Role, Team, User, TeamMember } from '@prisma/client';
+import { GetServerSidePropsContext } from 'next';
+import { getSession } from 'next-auth/react';
 
 /**
  * Get team from domain or session
  */
-export async function getTeamFromContext(params: {
-  domain?: string | null;
-  userId?: string | null;
-}): Promise<Team | null> {
-  const { domain, userId } = params;
-
-  if (domain) {
-    return prisma.team.findUnique({
-      where: { domain },
-    });
+export async function getTeamFromContext(
+  context: GetServerSidePropsContext
+): Promise<Team | null> {
+  const session = await getSession(context);
+  if (!session?.user?.id) {
+    return null;
   }
 
-  if (userId) {
-    const teamMember = await prisma.teamMember.findFirst({
-      where: { userId },
-      include: { team: true },
-      orderBy: { createdAt: 'asc' },
-    });
-    return teamMember?.team || null;
-  }
+  const teamMember = await prisma.teamMember.findFirst({
+    where: {
+      userId: session.user.id,
+    },
+    include: {
+      team: true,
+    },
+  });
 
-  return null;
+  return teamMember?.team || null;
 }
 
 /**
  * Check if user has required role in team
  */
+export async function hasTeamRole(
+  userId: string,
+  teamId: string,
+  roles?: Role[]
+): Promise<boolean>;
 export async function hasTeamRole(params: {
   userId: string;
   teamId: string;
-  roles: string[];
-}): Promise<boolean> {
-  const { userId, teamId, roles } = params;
+  roles?: Role[];
+}): Promise<boolean>;
+export async function hasTeamRole(
+  userIdOrParams: string | { userId: string; teamId: string; roles?: Role[] },
+  teamId?: string,
+  roles?: Role[]
+): Promise<boolean> {
+  let userId: string;
+  let teamIdToUse: string;
+  let rolesToCheck: Role[] | undefined;
 
-  const teamMember = await prisma.teamMember.findUnique({
-    where: {
-      teamId_userId: {
-        teamId,
-        userId,
-      },
-    },
+  if (typeof userIdOrParams === 'string') {
+    userId = userIdOrParams;
+    teamIdToUse = teamId!;
+    rolesToCheck = roles;
+  } else {
+    userId = userIdOrParams.userId;
+    teamIdToUse = userIdOrParams.teamId;
+    rolesToCheck = userIdOrParams.roles;
+  }
+
+  const query: any = {
+    userId,
+    teamId: teamIdToUse,
+  };
+
+  if (rolesToCheck && rolesToCheck.length > 0) {
+    query.role = {
+      in: rolesToCheck,
+    };
+  }
+
+  const teamMember = await prisma.teamMember.findFirst({
+    where: query,
   });
 
-  return teamMember ? roles.includes(teamMember.role) : false;
+  return !!teamMember;
 }
 
 /**
- * Get user's teams with roles
+ * Validate SAML config
  */
-export async function getUserTeams(userId: string) {
-  const teamMembers = await prisma.teamMember.findMany({
-    where: { userId },
-    include: { team: true },
-  });
+export function validateSAMLConfig(config: {
+  acsUrl: string;
+  entityId: string;
+  idpUrl: string;
+  certificate: string;
+}): { isValid: boolean; errors: string[] } {
+  const errors: string[] = [];
 
-  return teamMembers.map(({ team, role }) => ({
-    ...team,
-    role,
-  }));
+  if (!config.acsUrl) {
+    errors.push('ACS URL is required');
+  } else if (!isValidUrl(config.acsUrl)) {
+    errors.push('Invalid ACS URL');
+  }
+
+  if (!config.entityId) {
+    errors.push('Entity ID is required');
+  } else if (!isValidUrl(config.entityId)) {
+    errors.push('Invalid Entity ID');
+  }
+
+  if (!config.idpUrl) {
+    errors.push('IdP URL is required');
+  } else if (!isValidUrl(config.idpUrl)) {
+    errors.push('Invalid IdP URL');
+  }
+
+  if (!config.certificate) {
+    errors.push('Certificate is required');
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+}
+
+function isValidUrl(url: string): boolean {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
  * Format SAML configuration for display
  */
-export function formatSAMLConfig(config: any) {
+export function formatSAMLConfig(config: {
+  acsUrl: string;
+  entityId: string;
+  idpUrl: string;
+  certificate: string;
+}): {
+  acsUrl: string;
+  entityId: string;
+  idpUrl: string;
+  certificate: string;
+} {
   return {
-    entityId: config.entityId || '',
     acsUrl: config.acsUrl || '',
+    entityId: config.entityId || '',
     idpUrl: config.idpUrl || '',
     certificate: config.certificate || '',
   };
 }
 
 /**
- * Validate SAML configuration
+ * Generate a slug for a team name
  */
-export function validateSAMLConfig(config: any): string | null {
-  const required = ['entityId', 'acsUrl', 'idpUrl', 'certificate'];
-  const missing = required.filter(field => !config[field]);
-  
-  if (missing.length > 0) {
-    return `Missing required fields: ${missing.join(', ')}`;
-  }
-
-  return null;
-}
-
-/**
- * Generate team slug from name
- */
-export async function generateTeamSlug(name: string): Promise<string> {
-  const baseSlug = name
+export function generateTeamSlug(name: string): string {
+  return name
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/[^a-z0-9]/g, '-')
+    .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
-
-  let slug = baseSlug;
-  let counter = 1;
-
-  while (await prisma.team.findUnique({ where: { slug } })) {
-    slug = `${baseSlug}-${counter}`;
-    counter++;
-  }
-
-  return slug;
 }

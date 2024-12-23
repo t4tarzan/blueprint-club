@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es2015",
     "lib": [
       "dom",
       "dom.iterable",
@@ -21,11 +21,27 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"],
-      "@/components/*": ["components/*"],
-      "@/lib/*": ["lib/*"],
-      "@/types": ["types/index.ts"],
-      "@/utils/*": ["utils/*"]
+      "@/*": [
+        "./*"
+      ],
+      "@/components/*": [
+        "components/*"
+      ],
+      "@/lib/*": [
+        "lib/*"
+      ],
+      "@/types/*": [
+        "types/*"
+      ],
+      "@/utils/*": [
+        "utils/*"
+      ],
+      "@/prisma": [
+        "lib/prisma"
+      ],
+      "@/boxyhq/*": [
+        "lib/boxyhq/*"
+      ]
     }
   },
   "include": [
@@ -35,6 +51,6 @@
   ],
   "exclude": [
     "node_modules",
-    "addons"
+    "addons/**/*"
   ]
 }

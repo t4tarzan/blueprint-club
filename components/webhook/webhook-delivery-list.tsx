@@ -1,84 +1,56 @@
-import { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { WebhookDelivery } from '@/lib/types/webhook';
+import { WebhookDelivery } from '@prisma/client';
+import { formatDate } from '@/lib/utils';
 
 interface WebhookDeliveryListProps {
-  webhookId: string;
+  deliveries: WebhookDelivery[];
+  onSelect: (delivery: WebhookDelivery) => void;
 }
 
-export function WebhookDeliveryList({ webhookId }: WebhookDeliveryListProps) {
-  const [deliveries, setDeliveries] = useState<WebhookDelivery[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchDeliveries();
-  }, [webhookId]);
-
-  const fetchDeliveries = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/webhooks/${webhookId}/deliveries`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch webhook deliveries');
-      }
-      const data = await response.json();
-      setDeliveries(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (error) {
-    return <div>Error: {error}</div>;
-  }
-
+export function WebhookDeliveryList({ deliveries, onSelect }: WebhookDeliveryListProps) {
   return (
-    <div className="space-y-4">
-      <h2 className="text-lg font-semibold">Recent Deliveries</h2>
-      {deliveries.length === 0 ? (
-        <p>No deliveries found</p>
-      ) : (
-        <div className="space-y-4">
-          {deliveries.map((delivery) => (
-            <Card key={delivery.id} className="p-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="font-medium">{delivery.event}</p>
-                  <p className="text-sm text-gray-500">
-                    {new Date(delivery.createdAt).toLocaleString()}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className={`text-sm ${getStatusColor(delivery.responseStatus)}`}>
-                    Status: {delivery.responseStatus}
-                  </p>
-                  {delivery.error && (
-                    <p className="text-sm text-red-500">Error: {delivery.error}</p>
-                  )}
-                </div>
+    <div className="space-y-2">
+      {deliveries.map((delivery) => (
+        <button
+          key={delivery.id}
+          onClick={() => onSelect(delivery)}
+          className="w-full text-left p-4 bg-white rounded-lg shadow hover:shadow-md transition-shadow duration-200"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center space-x-3">
+                <span
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    delivery.success
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}
+                >
+                  {delivery.success ? 'Success' : 'Failed'}
+                </span>
+                <span className="text-sm text-gray-500 truncate">
+                  {delivery.event}
+                </span>
               </div>
-            </Card>
-          ))}
-        </div>
-      )}
+              <div className="mt-1">
+                <p className="text-sm text-gray-900 truncate">{delivery.url}</p>
+                {delivery.statusCode && (
+                  <p className="text-sm text-gray-500">
+                    Status code: {delivery.statusCode}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="ml-4 flex-shrink-0">
+              <div className="text-sm text-gray-500">
+                {formatDate(delivery.createdAt)}
+              </div>
+              <div className="text-sm text-gray-500">
+                Duration: {delivery.duration}ms
+              </div>
+            </div>
+          </div>
+        </button>
+      ))}
     </div>
   );
-}
-
-function getStatusColor(status: number): string {
-  if (status >= 200 && status < 300) {
-    return 'text-green-500';
-  } else if (status >= 400 && status < 500) {
-    return 'text-yellow-500';
-  } else {
-    return 'text-red-500';
-  }
 }

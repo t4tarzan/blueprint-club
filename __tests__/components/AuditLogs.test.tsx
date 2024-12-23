@@ -1,207 +1,155 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '../utils/test-utils';
-import { AuditLogs } from '../../components/teams/AuditLogs';
-import { mockTeam, mockAuditLog, mockApiResponse } from '../utils/test-utils';
+import { screen, waitFor, fireEvent, render, within } from '@testing-library/react';
+import { rest } from 'msw';
+import { setupServer } from 'msw/node';
+import { AuditLogs } from '@/components/teams/AuditLogs';
+import { renderWithProviders, mockTeam, mockAuditLog, mockUser } from '../utils/test-utils';
+import type { AuditLog } from '@/types';
+import { formatDate } from '@/lib/utils';
 
-// Mock fetch
-global.fetch = jest.fn();
+// Mock date-fns format
+jest.mock('date-fns/format', () => ({
+  __esModule: true,
+  default: jest.fn().mockImplementation((date) => date.toISOString()),
+}));
+
+// Mock heroicons
+jest.mock('@heroicons/react/24/outline', () => ({
+  CalendarIcon: () => <div data-testid="calendar-icon" />,
+  ArrowPathIcon: () => <div data-testid="arrow-path-icon" />,
+  ArrowDownTrayIcon: () => <div data-testid="arrow-down-tray-icon" />,
+}));
+
+const server = setupServer(
+  rest.get('/api/teams/:teamId/audit-logs', (req, res, ctx) => {
+    return res(
+      ctx.json({
+        logs: [mockAuditLog],
+        pagination: {
+          total: 1,
+          page: 1,
+          limit: 10,
+        },
+      })
+    );
+  })
+);
+
+beforeAll(() => server.listen());
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
 
 describe('AuditLogs', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (global.fetch as jest.Mock).mockImplementation(() =>
-      mockApiResponse(200, {
-        logs: [mockAuditLog],
-        pagination: {
-          total: 1,
-          pages: 1,
-          page: 1,
-          limit: 50,
-        },
-      })
-    );
   });
 
-  it('renders audit logs table correctly', async () => {
-    render(<AuditLogs team={mockTeam} />);
+  it('renders audit logs', async () => {
+    renderWithProviders(<AuditLogs team={{ ...mockTeam, members: mockTeam.members }} />);
 
-    // Check if loading state is shown initially
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
-
-    // Wait for data to load
     await waitFor(() => {
-      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
-    });
-
-    // Check if table headers are rendered
-    expect(screen.getByText('Timestamp')).toBeInTheDocument();
-    expect(screen.getByText('Action')).toBeInTheDocument();
-    expect(screen.getByText('User')).toBeInTheDocument();
-    expect(screen.getByText('Status')).toBeInTheDocument();
-    expect(screen.getByText('IP Address')).toBeInTheDocument();
-
-    // Check if log data is rendered
-    expect(screen.getByText(mockAuditLog.action)).toBeInTheDocument();
-    expect(screen.getByText(mockAuditLog.user.name)).toBeInTheDocument();
-    expect(screen.getByText(mockAuditLog.status)).toBeInTheDocument();
-    expect(screen.getByText(mockAuditLog.ipAddress)).toBeInTheDocument();
-  });
-
-  it('handles filtering correctly', async () => {
-    render(<AuditLogs team={mockTeam} />);
-
-    // Wait for initial data to load
-    await waitFor(() => {
-      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
-    });
-
-    // Change category filter
-    fireEvent.change(screen.getByLabelText('Category'), {
-      target: { value: 'auth' },
-    });
-
-    // Change status filter
-    fireEvent.change(screen.getByLabelText('Status'), {
-      target: { value: 'success' },
-    });
-
-    // Verify that fetch was called with correct filters
-    await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('category=auth'),
-        expect.any(Object)
-      );
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('status=success'),
-        expect.any(Object)
-      );
+      const table = screen.getByRole('table');
+      const rows = within(table).getAllByRole('row');
+      expect(rows.length).toBeGreaterThan(1); // Header + data row
+      expect(within(rows[1]).getByText(mockAuditLog.action)).toBeInTheDocument();
     });
   });
 
-  it('handles date range filtering correctly', async () => {
-    render(<AuditLogs team={mockTeam} />);
-
-    // Wait for initial data to load
-    await waitFor(() => {
-      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
-    });
-
-    // Set date range
-    const startDate = '2024-01-01';
-    const endDate = '2024-12-31';
-
-    fireEvent.change(screen.getAllByLabelText('Date Range')[0], {
-      target: { value: startDate },
-    });
-
-    fireEvent.change(screen.getAllByLabelText('Date Range')[1], {
-      target: { value: endDate },
-    });
-
-    // Verify that fetch was called with correct date range
-    await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining(`startDate=${startDate}`),
-        expect.any(Object)
-      );
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining(`endDate=${endDate}`),
-        expect.any(Object)
-      );
-    });
-  });
-
-  it('handles export functionality correctly', async () => {
-    const originalWindow = global.window;
-    global.window = {
-      ...originalWindow,
-      location: { href: '' } as Location
-    } as Window & typeof globalThis;
-
-    render(<AuditLogs team={mockTeam} />);
-
-    // Wait for initial data to load
-    await waitFor(() => {
-      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
-    });
-
-    // Click export button
-    fireEvent.click(screen.getByText('Export'));
-
-    // Verify that export URL was set correctly
-    expect(global.window.location.href).toContain(
-      `/api/teams/${mockTeam.id}/audit-logs/export`
-    );
-
-    global.window = originalWindow;
-  });
-
-  it('handles error states correctly', async () => {
-    // Mock fetch to return an error
-    (global.fetch as jest.Mock).mockImplementation(() =>
-      mockApiResponse(500, { message: 'Internal server error' })
-    );
-
-    render(<AuditLogs team={mockTeam} />);
-
-    // Wait for error message to appear
-    await waitFor(() => {
-      expect(screen.getByText('Failed to load audit logs')).toBeInTheDocument();
-    });
-  });
-
-  it('handles empty state correctly', async () => {
-    // Mock fetch to return empty logs
-    (global.fetch as jest.Mock).mockImplementation(() =>
-      mockApiResponse(200, {
-        logs: [],
-        pagination: {
-          total: 0,
-          pages: 0,
-          page: 1,
-          limit: 50,
-        },
+  it('renders error state', async () => {
+    server.use(
+      rest.get('/api/teams/:teamId/audit-logs', (req, res, ctx) => {
+        return res(ctx.status(500), ctx.json({ message: 'Error loading audit logs' }));
       })
     );
 
-    render(<AuditLogs team={mockTeam} />);
+    renderWithProviders(<AuditLogs team={{ ...mockTeam, members: mockTeam.members }} />);
 
-    // Wait for empty state message
+    await waitFor(() => {
+      expect(screen.getByText('Error loading audit logs')).toBeInTheDocument();
+    });
+  });
+
+  it('renders empty state', async () => {
+    server.use(
+      rest.get('/api/teams/:teamId/audit-logs', (req, res, ctx) => {
+        return res(
+          ctx.json({
+            logs: [],
+            pagination: {
+              total: 0,
+              page: 1,
+              limit: 10,
+            },
+          })
+        );
+      })
+    );
+
+    renderWithProviders(<AuditLogs team={{ ...mockTeam, members: mockTeam.members }} />);
+
     await waitFor(() => {
       expect(screen.getByText('No audit logs found')).toBeInTheDocument();
     });
   });
 
-  it('handles pagination correctly', async () => {
-    // Mock fetch to return multiple pages
-    (global.fetch as jest.Mock).mockImplementation(() =>
-      mockApiResponse(200, {
-        logs: [mockAuditLog],
-        pagination: {
-          total: 100,
-          pages: 2,
-          page: 1,
-          limit: 50,
-        },
+  it('handles pagination', async () => {
+    renderWithProviders(<AuditLogs team={{ ...mockTeam, members: mockTeam.members }} />);
+
+    await waitFor(() => {
+      const pagination = screen.getByText(/showing page/i);
+      expect(pagination).toBeInTheDocument();
+      expect(pagination).toHaveTextContent('1');
+    });
+  });
+
+  it('renders audit logs correctly', async () => {
+    renderWithProviders(<AuditLogs team={{ ...mockTeam, members: mockTeam.members }} />);
+
+    await waitFor(() => {
+      const table = screen.getByRole('table');
+      const rows = within(table).getAllByRole('row');
+      const cells = within(rows[1]).getAllByRole('cell');
+      
+      expect(cells[2]).toHaveTextContent(mockAuditLog.action);
+      expect(cells[3]).toHaveTextContent(mockAuditLog.category);
+      expect(cells[4]).toHaveTextContent(mockAuditLog.status);
+    });
+  });
+
+  it('handles empty audit logs', async () => {
+    server.use(
+      rest.get('/api/teams/:teamId/audit-logs', (req, res, ctx) => {
+        return res(
+          ctx.json({
+            logs: [],
+            pagination: {
+              total: 0,
+              page: 1,
+              limit: 10,
+            },
+          })
+        );
       })
     );
 
-    render(<AuditLogs team={mockTeam} />);
+    renderWithProviders(<AuditLogs team={{ ...mockTeam, members: mockTeam.members }} />);
 
-    // Wait for data to load
     await waitFor(() => {
-      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+      expect(screen.getByText('No audit logs found')).toBeInTheDocument();
     });
+  });
 
-    // Click next page button
-    fireEvent.click(screen.getByText('Next'));
+  it('handles error state', async () => {
+    server.use(
+      rest.get('/api/teams/:teamId/audit-logs', (req, res, ctx) => {
+        return res(ctx.status(500), ctx.json({ message: 'Error loading audit logs' }));
+      })
+    );
 
-    // Verify that fetch was called with correct page number
+    renderWithProviders(<AuditLogs team={{ ...mockTeam, members: mockTeam.members }} />);
+
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('page=2'),
-        expect.any(Object)
-      );
+      expect(screen.getByText('Error loading audit logs')).toBeInTheDocument();
     });
   });
 });

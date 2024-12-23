@@ -1,123 +1,84 @@
-import { NextApiRequest, NextApiResponse } from 'next';
-import { PrismaClient } from '@prisma/client';
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { hash } from 'bcryptjs';
-import crypto from 'crypto';
-import { sendPasswordResetEmail } from '../../../lib/email';
+import { prisma } from '@/lib/prisma';
+import { defaultHeaders } from '@/lib/common';
+import { emailService } from '@/lib/email';
+import type { ApiError } from '@/types';
 
-const prisma = new PrismaClient();
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'POST' && req.method !== 'PUT') {
+    return res.status(405).json({ message: 'Method not allowed' });
+  }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method === 'POST') {
-    // Request password reset
-    try {
+  try {
+    if (req.method === 'POST') {
       const { email } = req.body;
-      console.log('Reset password request received for:', email);
-      
+
+      if (!email) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+
       // Check if user exists
       const user = await prisma.user.findUnique({
         where: { email },
-      }).catch(err => {
-        console.error('Database error when finding user:', err);
-        throw err;
       });
-
-      console.log('User lookup result:', user ? 'Found' : 'Not found');
 
       if (!user) {
-        console.log('No user found with email:', email);
-        // Don't reveal if user exists
-        return res.status(200).json({ message: 'If an account exists, a password reset email has been sent' });
+        return res.status(404).json({ message: 'User not found' });
       }
 
-      // Generate reset token
-      const resetToken = crypto.randomBytes(32).toString('hex');
-      const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-      console.log('Generated reset token:', resetToken.substring(0, 8) + '...');
-
-      try {
-        // Store reset token
-        const savedToken = await prisma.verificationToken.upsert({
-          where: { email: user.email },
-          update: {
-            token: resetToken,
-            expires,
-          },
-          create: {
-            email: user.email,
-            token: resetToken,
-            expires,
-          },
-        }).catch(err => {
-          console.error('Database error when upserting token:', err);
-          throw err;
-        });
-
-        console.log('Successfully saved verification token with ID:', savedToken.id);
-
-        // Send reset email
-        console.log('Attempting to send reset email...');
-        await sendPasswordResetEmail(email, resetToken).catch(err => {
-          console.error('Email sending error:', err);
-          throw err;
-        });
-        console.log('Reset email sent successfully');
-
-        return res.status(200).json({ message: 'Password reset email sent' });
-      } catch (innerError) {
-        console.error('Detailed inner error:', innerError);
-        throw innerError;
-      }
-    } catch (error) {
-      console.error('Reset password request error:', error);
-      return res.status(500).json({ 
-        message: 'Error processing request',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined 
+      // Create reset token
+      const resetToken = await prisma.verificationToken.create({
+        data: {
+          identifier: email,
+          token: require('crypto').randomBytes(32).toString('hex'),
+          expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+        },
       });
-    }
-  } else if (req.method === 'PUT') {
-    // Reset password with token
-    try {
+
+      // Send reset email
+      await emailService.sendPasswordResetEmail(email, resetToken.token);
+
+      return res.status(200).json({ message: 'Password reset email sent' });
+    } else if (req.method === 'PUT') {
       const { token, password } = req.body;
 
+      if (!token || !password) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+
       // Verify token
-      const verificationToken = await prisma.verificationToken.findFirst({
-        where: {
-          token,
-          expires: { gt: new Date() },
-        },
+      const verificationToken = await prisma.verificationToken.findUnique({
+        where: { token },
       });
 
       if (!verificationToken) {
-        return res.status(400).json({ message: 'Invalid or expired token' });
+        return res.status(400).json({ message: 'Invalid token' });
       }
 
-      // Hash new password
-      const hashedPassword = await hash(password, 10);
+      if (verificationToken.expires < new Date()) {
+        await prisma.verificationToken.delete({
+          where: { token },
+        });
+        return res.status(400).json({ message: 'Token expired' });
+      }
 
-      // Update user password and verify email
+      // Update password
+      const hashedPassword = await hash(password, 10);
       await prisma.user.update({
-        where: { email: verificationToken.email },
-        data: {
-          password: hashedPassword,
-          emailVerified: new Date(),
-        },
+        where: { email: verificationToken.identifier },
+        data: { password: hashedPassword },
       });
 
       // Delete used token
       await prisma.verificationToken.delete({
-        where: { id: verificationToken.id },
+        where: { token },
       });
 
-      return res.status(200).json({ message: 'Password reset successful' });
-    } catch (error) {
-      console.error('Reset password error:', error);
-      return res.status(500).json({ message: 'Error resetting password' });
+      return res.status(200).json({ message: 'Password updated successfully' });
     }
+  } catch (error) {
+    console.error('Password reset error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
   }
-
-  return res.status(405).json({ message: 'Method not allowed' });
 }

@@ -1,6 +1,9 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getSession } from 'next-auth/react';
 import { prisma } from '../../../../../lib/prisma';
+import { hasTeamRole } from '../../../../../lib/boxyhq/utils';
+import { Role } from '@prisma/client';
+import type { Session } from 'next-auth';
 
 export default async function handler(
   req: NextApiRequest,
@@ -33,10 +36,9 @@ async function getInvitation(req: NextApiRequest, res: NextApiResponse) {
   try {
     const invitation = await prisma.invitation.findFirst({
       where: {
-        teamId,
         token,
-        status: 'PENDING',
-        expiresAt: {
+        teamId,
+        expires: {
           gt: new Date(),
         },
       },
@@ -65,7 +67,7 @@ async function getInvitation(req: NextApiRequest, res: NextApiResponse) {
 }
 
 // Accept invitation
-async function acceptInvitation(req: NextApiRequest, res: NextApiResponse, session: any) {
+async function acceptInvitation(req: NextApiRequest, res: NextApiResponse, session: Session) {
   const teamId = req.query.id as string;
   const token = req.query.token as string;
 
@@ -73,10 +75,9 @@ async function acceptInvitation(req: NextApiRequest, res: NextApiResponse, sessi
     // Find valid invitation
     const invitation = await prisma.invitation.findFirst({
       where: {
-        teamId,
         token,
-        status: 'PENDING',
-        expiresAt: {
+        teamId,
+        expires: {
           gt: new Date(),
         },
       },
@@ -103,14 +104,8 @@ async function acceptInvitation(req: NextApiRequest, res: NextApiResponse, sessi
       return res.status(400).json({ message: 'You are already a member of this team' });
     }
 
-    // Accept invitation and create team member in a transaction
-    const result = await prisma.$transaction([
-      // Update invitation status
-      prisma.invitation.update({
-        where: { id: invitation.id },
-        data: { status: 'ACCEPTED' },
-      }),
-      // Create team member
+    // Accept invitation and add user to team
+    const [member] = await prisma.$transaction([
       prisma.teamMember.create({
         data: {
           teamId,
@@ -118,7 +113,6 @@ async function acceptInvitation(req: NextApiRequest, res: NextApiResponse, sessi
           role: invitation.role,
         },
         include: {
-          team: true,
           user: {
             select: {
               id: true,
@@ -129,9 +123,13 @@ async function acceptInvitation(req: NextApiRequest, res: NextApiResponse, sessi
           },
         },
       }),
+      prisma.invitation.update({
+        where: { id: invitation.id },
+        data: { status: 'ACCEPTED' },
+      }),
     ]);
 
-    return res.status(200).json(result[1]); // Return the new team member
+    return res.status(200).json(member);
   } catch (error) {
     console.error('Failed to accept invitation:', error);
     return res.status(500).json({ message: 'Internal server error' });
@@ -139,33 +137,35 @@ async function acceptInvitation(req: NextApiRequest, res: NextApiResponse, sessi
 }
 
 // Cancel invitation (by team admin or invitee)
-async function cancelInvitation(req: NextApiRequest, res: NextApiResponse, session: any) {
+async function cancelInvitation(req: NextApiRequest, res: NextApiResponse, session: Session) {
   const teamId = req.query.id as string;
   const token = req.query.token as string;
 
   try {
     const invitation = await prisma.invitation.findFirst({
       where: {
-        teamId,
         token,
-        status: 'PENDING',
+        teamId,
+        expires: {
+          gt: new Date(),
+        },
       },
     });
 
     if (!invitation) {
-      return res.status(404).json({ message: 'Invitation not found' });
+      return res.status(404).json({ message: 'Invalid or expired invitation' });
     }
 
     // Check if user has permission to cancel
-    const canCancel =
-      invitation.email.toLowerCase() === session.user.email.toLowerCase() ||
-      (await hasTeamRole({
-        userId: session.user.id,
-        teamId,
-        roles: ['OWNER', 'ADMIN'],
-      }));
+    const isAdmin = await hasTeamRole({
+      teamId,
+      userId: session.user.id,
+      roles: [Role.ADMIN, Role.OWNER]
+    });
+    
+    const isInvitee = invitation.email.toLowerCase() === session.user.email.toLowerCase();
 
-    if (!canCancel) {
+    if (!isAdmin && !isInvitee) {
       return res.status(403).json({ message: 'Insufficient permissions' });
     }
 
@@ -175,7 +175,7 @@ async function cancelInvitation(req: NextApiRequest, res: NextApiResponse, sessi
       data: { status: 'CANCELLED' },
     });
 
-    return res.status(204).end();
+    return res.status(200).json({ message: 'Invitation cancelled successfully' });
   } catch (error) {
     console.error('Failed to cancel invitation:', error);
     return res.status(500).json({ message: 'Internal server error' });

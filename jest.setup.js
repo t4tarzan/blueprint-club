@@ -2,6 +2,19 @@
 import '@testing-library/jest-dom';
 import 'whatwg-fetch';
 
+// Add TextEncoder and TextDecoder polyfills for Node.js environment
+global.TextEncoder = require('util').TextEncoder;
+global.TextDecoder = require('util').TextDecoder;
+
+// Add BroadcastChannel polyfill
+global.BroadcastChannel = class {
+  constructor() {}
+  postMessage() {}
+  addEventListener() {}
+  removeEventListener() {}
+  close() {}
+};
+
 // Extend Jest matchers
 expect.extend({
   toBeInTheDocument(received) {
@@ -10,10 +23,6 @@ expect.extend({
       message: () => `expected ${received} to be in the document`,
       pass,
     };
-  },
-  toHaveBeenCalledWith(...args) {
-    const mockFn = this.isNot ? expect(args[0]).not : expect(args[0]);
-    return mockFn.toHaveBeenCalledWith(...args.slice(1));
   },
   toContain(received, expected) {
     const pass = received.includes(expected);
@@ -57,7 +66,7 @@ jest.mock('next-auth/react', () => ({
   useSession: jest.fn(() => ({ data: null, status: 'unauthenticated' })),
   signIn: jest.fn(),
   signOut: jest.fn(),
-  getSession: jest.fn(),
+  getSession: jest.fn(() => null),
 }));
 
 // Mock environment variables

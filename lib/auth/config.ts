@@ -1,51 +1,63 @@
-import { AuthOptions } from 'next-auth';
+import { AuthOptions, Session, User } from 'next-auth';
+import { JWT } from 'next-auth/jwt';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
+import { prisma } from '@/lib/prisma';
+import { Role } from '@prisma/client';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { compare } from 'bcryptjs';
-import { prisma } from '../prisma';
-import { Role } from '@/lib/types';
+import { BoxyHQSAMLProvider } from './providers/boxyhq-saml';
+import { verifyPassword } from '../utils';
+import { env } from '@/env.mjs';
 
-export interface Team {
+export interface AuthUser extends User {
   id: string;
   name: string;
-  role: Role;
-}
-
-export interface User {
-  id: string;
   email: string;
-  name: string | null;
   image: string | null;
   emailVerified: Date | null;
   membershipTier: string;
-  teams?: Team[];
-  currentTeam?: Team;
+  teams: {
+    id: string;
+    name: string;
+    slug: string;
+    role: Role;
+  }[];
 }
 
-export const adapter = PrismaAdapter(prisma);
+export interface ExtendedSession extends Session {
+  user: AuthUser;
+}
 
-// Rate limiting configuration
-const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS || '5', 10);
-const LOGIN_ATTEMPT_WINDOW = parseInt(process.env.LOGIN_ATTEMPT_WINDOW || '300', 10);
+export const COOKIE_NAME = 'next-auth.session-token';
+export const CSRF_COOKIE_NAME = 'next-auth.csrf-token';
 
 export const authOptions: AuthOptions = {
-  adapter,
+  adapter: PrismaAdapter(prisma),
+  session: {
+    strategy: 'jwt',
+  },
+  pages: {
+    signIn: '/auth/login',
+    error: '/auth/error',
+    verifyRequest: '/auth/verify',
+  },
   providers: [
+    BoxyHQSAMLProvider,
     CredentialsProvider({
-      name: 'credentials',
+      id: 'credentials',
+      name: 'Credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error('Please enter your email and password');
+          throw new Error('Email and password required');
         }
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
           include: {
-            teamMembers: {
+            teams: {
               include: {
                 team: true,
               },
@@ -53,39 +65,52 @@ export const authOptions: AuthOptions = {
           },
         });
 
-        if (!user || !user.password) {
-          throw new Error('Invalid email or password');
+        if (!user) {
+          throw new Error('User not found');
         }
 
-        // Check for account lockout
-        if (user.lockedAt && user.lockedAt > new Date(Date.now() - LOGIN_ATTEMPT_WINDOW * 1000)) {
-          throw new Error('Account is temporarily locked. Please try again later.');
+        if (!user.password) {
+          throw new Error('Please use the login method you used to create your account');
         }
 
-        const isValid = await compare(credentials.password, user.password);
+        if (user.invalid_login_attempts >= 5 && user.lockedAt) {
+          const lockoutPeriod = 30 * 60 * 1000; // 30 minutes
+          const now = new Date();
+          const lockoutEnd = new Date(user.lockedAt.getTime() + lockoutPeriod);
 
-        if (!isValid) {
-          // Increment failed login attempts
+          if (now < lockoutEnd) {
+            throw new Error('Account locked. Please try again later');
+          }
+
+          // Reset lockout if period has passed
           await prisma.user.update({
             where: { id: user.id },
             data: {
-              invalid_login_attempts: {
-                increment: 1,
-              },
-              lockedAt: user.invalid_login_attempts + 1 >= MAX_LOGIN_ATTEMPTS
-                ? new Date()
-                : null,
+              invalid_login_attempts: 0,
+              lockedAt: null,
+            },
+          });
+        }
+
+        const isValid = await verifyPassword(credentials.password, user.password);
+
+        if (!isValid) {
+          // Increment invalid login attempts
+          const invalid_login_attempts = (user.invalid_login_attempts || 0) + 1;
+          const lockedAt = invalid_login_attempts >= 5 ? new Date() : null;
+
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              invalid_login_attempts,
+              lockedAt,
             },
           });
 
-          throw new Error('Invalid email or password');
+          throw new Error('Invalid password');
         }
 
-        if (!user.emailVerified) {
-          throw new Error('Please verify your email before signing in');
-        }
-
-        // Reset login attempts on successful login
+        // Reset invalid login attempts on successful login
         await prisma.user.update({
           where: { id: user.id },
           data: {
@@ -96,56 +121,63 @@ export const authOptions: AuthOptions = {
 
         return {
           id: user.id,
-          email: user.email,
           name: user.name,
+          email: user.email,
           image: user.image,
           emailVerified: user.emailVerified,
-          teams: user.teamMembers.map(member => ({
-            id: member.team.id,
-            name: member.team.name,
-            role: member.role,
+          membershipTier: user.membershipTier,
+          teams: user.teams.map((membership) => ({
+            id: membership.team.id,
+            name: membership.team.name,
+            slug: membership.team.slug,
+            role: membership.role,
           })),
         };
       },
     }),
   ],
-  pages: {
-    signIn: '/auth/signin',
-    newUser: '/auth/signup',
-    error: '/auth/error',
-    verifyRequest: '/auth/verify-request',
-  },
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.email = user.email;
-        token.name = user.name;
-        token.image = user.image;
-        token.teams = user.teams;
+    async jwt({ token, user, trigger, session }) {
+      if (trigger === 'update' && session) {
+        return { ...token, ...session.user };
       }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-        session.user.email = token.email as string;
-        session.user.name = token.name as string;
-        session.user.image = token.image as string;
-        session.user.teams = token.teams as any[];
+
+      if (!user) {
+        return token;
       }
-      return session;
+
+      return {
+        ...token,
+        ...user,
+      };
     },
-    async redirect({ url, baseUrl }) {
-      if (url.startsWith(baseUrl)) return url;
-      else if (url.startsWith('/')) return `${baseUrl}${url}`;
-      return baseUrl;
+    async session({ session, token }): Promise<ExtendedSession> {
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: token.id as string,
+          name: token.name as string,
+          email: token.email as string,
+          image: token.image as string | null,
+          emailVerified: token.emailVerified as Date | null,
+          membershipTier: token.membershipTier as string,
+          teams: token.teams as {
+            id: string;
+            name: string;
+            slug: string;
+            role: Role;
+          }[],
+        },
+      };
     },
   },
-  session: {
-    strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+  events: {
+    async signIn({ user, account, isNewUser }) {
+      if (isNewUser) {
+        // Handle new user signup
+      }
+    },
   },
-  secret: process.env.NEXTAUTH_SECRET,
-  debug: process.env.NODE_ENV === 'development',
+  secret: env.NEXTAUTH_SECRET,
 };

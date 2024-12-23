@@ -1,187 +1,77 @@
-import { prisma } from '../prisma';
+import { prisma } from '@/lib/prisma';
+import { AuditLog, Prisma } from '@prisma/client';
 
-export interface AuditLogData {
-  action: string;
-  actorId: string;
-  actorEmail?: string;
-  targetType: string;
-  targetId: string;
+export interface AuditLogOptions {
   teamId?: string;
-  metadata?: Record<string, any>;
+  action: string;
+  entityId?: string;
+  entityType: string;
+  entityName?: string;
+  actorId: string;
+  actorEmail: string;
+  actorName?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export class AuditService {
-  private static instance: AuditService;
+  async create(options: AuditLogOptions): Promise<AuditLog> {
+    const {
+      teamId,
+      action,
+      entityId,
+      entityType,
+      entityName,
+      actorId,
+      actorEmail,
+      actorName,
+      metadata,
+    } = options;
 
-  private constructor() {}
-
-  public static getInstance(): AuditService {
-    if (!AuditService.instance) {
-      AuditService.instance = new AuditService();
-    }
-    return AuditService.instance;
-  }
-
-  async log(data: AuditLogData) {
-    try {
-      const { action, actorId, actorEmail, targetType, targetId, teamId, metadata } = data;
-
-      await prisma.auditLog.create({
-        data: {
-          action,
-          actorId,
-          actorEmail,
-          targetType,
-          targetId,
-          teamId,
-          metadata,
-          timestamp: new Date(),
-        },
-      });
-    } catch (error) {
-      console.error('Error creating audit log:', error);
-      throw error;
-    }
-  }
-
-  async getTeamAuditLogs(teamId: string, options?: {
-    startDate?: Date;
-    endDate?: Date;
-    page?: number;
-    limit?: number;
-    actions?: string[];
-    targetTypes?: string[];
-  }) {
-    try {
-      const {
-        startDate,
-        endDate,
-        page = 1,
-        limit = 50,
-        actions,
-        targetTypes,
-      } = options || {};
-
-      const where = {
+    return prisma.auditLog.create({
+      data: {
         teamId,
-        ...(startDate && endDate && {
-          timestamp: {
-            gte: startDate,
-            lte: endDate,
-          },
-        }),
-        ...(actions?.length && {
-          action: {
-            in: actions,
-          },
-        }),
-        ...(targetTypes?.length && {
-          targetType: {
-            in: targetTypes,
-          },
-        }),
-      };
-
-      const [logs, total] = await Promise.all([
-        prisma.auditLog.findMany({
-          where,
-          orderBy: {
-            timestamp: 'desc',
-          },
-          skip: (page - 1) * limit,
-          take: limit,
-          include: {
-            actor: {
-              select: {
-                name: true,
-                email: true,
-                image: true,
-              },
-            },
-          },
-        }),
-        prisma.auditLog.count({ where }),
-      ]);
-
-      return {
-        logs,
-        pagination: {
-          total,
-          pages: Math.ceil(total / limit),
-          page,
-          limit,
-        },
-      };
-    } catch (error) {
-      console.error('Error fetching audit logs:', error);
-      throw error;
-    }
+        action,
+        entityId,
+        entityType,
+        entityName,
+        actorId,
+        actorEmail,
+        actorName,
+        metadata: metadata as Prisma.JsonObject,
+      },
+    });
   }
 
-  async getUserAuditLogs(userId: string, options?: {
-    startDate?: Date;
-    endDate?: Date;
+  async findMany(options: {
+    teamId?: string;
     page?: number;
     limit?: number;
-    actions?: string[];
-  }) {
-    try {
-      const {
-        startDate,
-        endDate,
-        page = 1,
-        limit = 50,
-        actions,
-      } = options || {};
+    orderBy?: Prisma.AuditLogOrderByWithRelationInput;
+  }): Promise<{ logs: AuditLog[]; total: number }> {
+    const { teamId, page = 1, limit = 10, orderBy } = options;
 
-      const where = {
-        actorId: userId,
-        ...(startDate && endDate && {
-          timestamp: {
-            gte: startDate,
-            lte: endDate,
-          },
-        }),
-        ...(actions?.length && {
-          action: {
-            in: actions,
-          },
-        }),
-      };
+    const where: Prisma.AuditLogWhereInput = {};
 
-      const [logs, total] = await Promise.all([
-        prisma.auditLog.findMany({
-          where,
-          orderBy: {
-            timestamp: 'desc',
-          },
-          skip: (page - 1) * limit,
-          take: limit,
-          include: {
-            actor: {
-              select: {
-                name: true,
-                email: true,
-                image: true,
-              },
-            },
-          },
-        }),
-        prisma.auditLog.count({ where }),
-      ]);
-
-      return {
-        logs,
-        pagination: {
-          total,
-          pages: Math.ceil(total / limit),
-          page,
-          limit,
-        },
-      };
-    } catch (error) {
-      console.error('Error fetching user audit logs:', error);
-      throw error;
+    if (teamId) {
+      where.teamId = teamId;
     }
+
+    const [logs, total] = await Promise.all([
+      prisma.auditLog.findMany({
+        where,
+        orderBy: orderBy || { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.auditLog.count({ where }),
+    ]);
+
+    return { logs, total };
+  }
+
+  async findById(id: string): Promise<AuditLog | null> {
+    return prisma.auditLog.findUnique({
+      where: { id },
+    });
   }
 }

@@ -87,6 +87,7 @@ const programData = {
   ],
   schedule: {
     title: 'Program Schedule',
+    days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
     times: [
       'Studio Sessions: Flexible booking',
       'Workshops: Weekly 3-hour sessions',

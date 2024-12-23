@@ -34,7 +34,7 @@ interface Program {
   }>;
   benefits: string[];
   schedule?: {
-    title: string;
+    days: string[];
     times: string[];
   };
   youtubeVideoId?: string;
@@ -97,7 +97,7 @@ const programData: Record<string, Program> = {
       'Continuous Learning'
     ],
     schedule: {
-      title: 'Flexible Schedule',
+      days: ['Weekdays', 'Weekends'],
       times: [
         'Weekday Evening Sessions: 6:00 PM - 9:00 PM',
         'Weekend Workshops: 10:00 AM - 4:00 PM',
@@ -192,7 +192,7 @@ const programData: Record<string, Program> = {
       'Balanced focus on academics and modern skills'
     ],
     schedule: {
-      title: 'Daily Schedule',
+      days: ['Weekdays', 'Weekends'],
       times: [
         'Morning Sessions: Core academic learning',
         'Afternoon Labs: Practical, project-based sessions',
@@ -307,7 +307,7 @@ const programData: Record<string, Program> = {
       'Industry-relevant training'
     ],
     schedule: {
-      title: 'Program Schedule',
+      days: ['Weekdays', 'Weekends'],
       times: [
         'Weekday Division 1: 4:30 PM – 6:30 PM',
         'Weekday Division 2: 6:30 PM – 7:30 PM',
@@ -382,7 +382,7 @@ const programData: Record<string, Program> = {
       'Regular Performance Platforms'
     ],
     schedule: {
-      title: 'Weekend Sessions',
+      days: ['Weekends'],
       times: [
         'Morning: 10:00 AM – 1:00 PM (Theory & Analysis)',
         'Evening: 4:00 PM – 7:00 PM (Practice & Performance)',

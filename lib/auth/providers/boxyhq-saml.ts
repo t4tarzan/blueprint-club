@@ -1,42 +1,49 @@
+import { SAMLProfile } from '@/lib/types/boxyhq';
 import { OAuthConfig } from 'next-auth/providers';
-import { BoxyHQSAMLProfile, BoxyHQSAMLConfig } from '@/lib/types/boxyhq';
-import { User } from '@/lib/types/prisma';
+import { env } from '@/env.mjs';
+
+export interface BoxyHQSAMLProfile extends SAMLProfile {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  name?: string;
+  emailVerified?: Date | null;
+  membershipTier?: string;
+}
 
 export interface BoxyHQSAMLProvider extends OAuthConfig<BoxyHQSAMLProfile> {
-  issuer: string;
-  clientID: string;
+  clientId: string;
   clientSecret: string;
-  callback: string;
+  issuer: string;
+  tenantId: string;
 }
 
-export default function BoxyHQSAMLProvider(config: BoxyHQSAMLConfig): BoxyHQSAMLProvider {
-  return {
-    id: 'boxyhq-saml',
-    name: 'BoxyHQ SAML',
-    type: 'oauth',
-    version: '2.0',
-    issuer: config.issuer,
-    clientId: config.clientID,
-    clientSecret: config.clientSecret,
-    callback: config.callback,
-    authorization: {
-      url: `${config.issuer}/api/oauth/authorize`,
-      params: {
-        scope: '',
-        response_type: 'code',
-        provider: 'saml',
-      },
+export const BoxyHQSAMLProvider: BoxyHQSAMLProvider = {
+  id: 'boxyhq-saml',
+  name: 'BoxyHQ SAML',
+  type: 'oauth',
+  version: '2.0',
+  clientId: env.BOXYHQ_SAML_CLIENT_ID,
+  clientSecret: env.BOXYHQ_SAML_CLIENT_SECRET,
+  issuer: env.BOXYHQ_SAML_ISSUER,
+  tenantId: env.BOXYHQ_SAML_TENANT_ID,
+  wellKnown: `${env.BOXYHQ_SAML_ISSUER}/.well-known/openid-configuration`,
+  authorization: {
+    params: {
+      scope: 'openid email profile',
     },
-    token: `${config.issuer}/api/oauth/token`,
-    userinfo: `${config.issuer}/api/oauth/userinfo`,
-    profile(profile: BoxyHQSAMLProfile): User {
-      return {
-        id: profile.id,
-        email: profile.email,
-        name: profile.name,
-        image: null,
-        emailVerified: new Date(),
-      };
-    },
-  };
-}
+  },
+  idToken: true,
+  checks: ['pkce', 'state'],
+  profile(profile: BoxyHQSAMLProfile) {
+    return {
+      id: profile.id,
+      email: profile.email,
+      name: profile.name ?? `${profile.firstName} ${profile.lastName}`.trim(),
+      image: null,
+      emailVerified: profile.emailVerified ?? null,
+      membershipTier: profile.membershipTier ?? 'FREE',
+    };
+  },
+};

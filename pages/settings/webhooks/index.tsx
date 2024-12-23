@@ -1,49 +1,109 @@
-import { GetServerSideProps } from 'next';
-import { getSession } from 'next-auth/react';
 import { useState } from 'react';
-import { useRouter } from 'next/router';
-import { useTranslation } from 'next-i18next';
-import { serverSideTranslations } from 'next-i18next/serverSideTranslations';
-import { SettingsLayout } from '@/components/layouts/settings-layout';
+import { WebhookForm, WebhookFormValues } from '@/components/webhook/webhook-form';
+import { WebhookService } from '@/lib/webhook/webhook-service';
+import { Webhook } from '@prisma/client';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Toggle } from '@/components/ui/toggle';
-import { Select } from '@/components/ui/select';
-import { WebhookList } from '@/components/webhook/webhook-list';
-import { WebhookForm } from '@/components/webhook/webhook-form';
-import { WebhookEvents } from '../../../lib/webhook/webhook-events';
-import { hasTeamRole } from '../../../lib/boxyhq/utils';
+import { getSession } from 'next-auth/react';
+import { hasTeamRole } from '@/lib/boxyhq/utils';
+import { ExtendedSession } from '@/lib/auth/config';
 
-export const getServerSideProps: GetServerSideProps = async ({ req, locale }) => {
-  const session = await getSession({ req });
+interface WebhookWithName extends Webhook {
+  name: string;
+}
 
-  if (!session?.user) {
-    return {
-      redirect: {
-        destination: '/auth/login',
-        permanent: false,
-      },
-    };
-  }
+interface WebhooksPageProps {
+  webhooks: WebhookWithName[];
+  teamId: string;
+}
 
-  const teamId = session.user.teamId;
-  if (!teamId) {
-    return {
-      redirect: {
-        destination: '/teams',
-        permanent: false,
-      },
-    };
-  }
+const webhookService = WebhookService.getInstance();
 
-  const hasPermission = await hasTeamRole({
-    userId: session.user.id,
-    teamId,
-    roles: ['OWNER', 'ADMIN'],
-  });
+export default function WebhooksPage({ webhooks: initialWebhooks, teamId }: WebhooksPageProps) {
+  const [webhooks, setWebhooks] = useState<WebhookWithName[]>(initialWebhooks);
+  const [selectedWebhook, setSelectedWebhook] = useState<WebhookWithName | undefined>();
 
-  if (!hasPermission) {
+  const handleSubmit = async (values: WebhookFormValues) => {
+    if (selectedWebhook) {
+      const updatedWebhook = await webhookService.update(selectedWebhook.id, {
+        ...values,
+        teamId,
+      });
+      setWebhooks(webhooks.map(w => w.id === updatedWebhook.id ? { ...updatedWebhook, name: values.name } : w));
+      setSelectedWebhook(undefined);
+    } else {
+      const newWebhook = await webhookService.create({
+        ...values,
+        teamId,
+      });
+      setWebhooks([...webhooks, { ...newWebhook, name: values.name }]);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    await webhookService.delete(id);
+    setWebhooks(webhooks.filter(w => w.id !== id));
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <h1 className="text-2xl font-bold mb-8">Webhooks</h1>
+      <div className="space-y-6">
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">
+            {selectedWebhook ? 'Edit Webhook' : 'Create Webhook'}
+          </h2>
+          <WebhookForm
+            webhook={selectedWebhook}
+            onSubmit={handleSubmit}
+          />
+        </div>
+        {webhooks.map(webhook => (
+          <div key={webhook.id} className="bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">{webhook.name}</h3>
+              <div className="space-x-2">
+                <Button
+                  variant="destructive"
+                  onClick={() => handleDelete(webhook.id)}
+                >
+                  Delete
+                </Button>
+                <Button
+                  onClick={() => setSelectedWebhook(webhook)}
+                >
+                  Edit
+                </Button>
+              </div>
+            </div>
+            <p className="text-gray-600">{webhook.url}</p>
+            <p className="text-sm text-gray-500 mt-2">
+              {webhook.description}
+            </p>
+            <div className="mt-4">
+              <h4 className="text-sm font-medium text-gray-700">Events:</h4>
+              <div className="mt-1 space-x-2">
+                {webhook.events.map(event => (
+                  <span
+                    key={event}
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                  >
+                    {event}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export async function getServerSideProps(context: any) {
+  const session = await getSession(context) as ExtendedSession | null;
+  const teamId = context.query.teamId as string;
+
+  if (!session || !hasTeamRole(session.user?.id, teamId, ['OWNER', 'ADMIN'])) {
     return {
       redirect: {
         destination: '/',
@@ -52,47 +112,12 @@ export const getServerSideProps: GetServerSideProps = async ({ req, locale }) =>
     };
   }
 
+  const webhooks = await webhookService.findByTeam(teamId);
+
   return {
     props: {
-      ...(await serverSideTranslations(locale || 'en', [
-        'common',
-        'settings',
-        'webhooks',
-      ])),
+      webhooks,
       teamId,
     },
   };
-};
-
-export default function WebhookSettings({ teamId }: { teamId: string }) {
-  const { t } = useTranslation(['common', 'settings', 'webhooks']);
-  const [showForm, setShowForm] = useState(false);
-
-  return (
-    <SettingsLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold">{t('webhooks:title')}</h2>
-            <p className="text-gray-500">{t('webhooks:description')}</p>
-          </div>
-          <Button onClick={() => setShowForm(true)} disabled={showForm}>
-            {t('webhooks:addWebhook')}
-          </Button>
-        </div>
-
-        {showForm && (
-          <Card>
-            <WebhookForm
-              teamId={teamId}
-              onCancel={() => setShowForm(false)}
-              onSuccess={() => setShowForm(false)}
-            />
-          </Card>
-        )}
-
-        <WebhookList teamId={teamId} />
-      </div>
-    </SettingsLayout>
-  );
 }

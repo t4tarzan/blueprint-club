@@ -1,119 +1,166 @@
 import { useState } from 'react';
-import { WebhookFormProps, WebhookEvent } from '@/lib/types/webhook';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useTranslation } from 'next-i18next';
+import { Webhook } from '@prisma/client';
 
-export function WebhookForm({ webhook, onSubmit, onCancel, events }: WebhookFormProps) {
-  const { t } = useTranslation('common');
-  const [formData, setFormData] = useState({
-    url: webhook?.url || '',
-    secret: webhook?.secret || '',
-    events: webhook?.events || [],
-    enabled: webhook?.enabled ?? true,
+const webhookFormSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  url: z.string().url('Must be a valid URL'),
+  description: z.string().optional(),
+  events: z.array(z.string()),
+  isActive: z.boolean(),
+});
+
+export type WebhookFormValues = z.infer<typeof webhookFormSchema>;
+
+export interface WebhookFormProps {
+  webhook?: {
+    id: string;
+    name: string;
+    description: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    teamId: string;
+    url: string;
+    events: string[];
+    isActive: boolean;
+    secret: string | null;
+  };
+  onSubmit: (values: WebhookFormValues) => Promise<void>;
+}
+
+const AVAILABLE_EVENTS = [
+  'user.created',
+  'user.updated',
+  'user.deleted',
+  'team.created',
+  'team.updated',
+  'team.deleted',
+  'member.added',
+  'member.removed',
+  'member.updated',
+];
+
+export const WebhookForm: React.FC<WebhookFormProps> = ({ webhook, onSubmit }) => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setValue,
+    watch,
+  } = useForm<WebhookFormValues>({
+    resolver: zodResolver(webhookFormSchema),
+    defaultValues: {
+      name: webhook?.name || '',
+      url: webhook?.url || '',
+      description: webhook?.description || '',
+      events: webhook?.events || [],
+      isActive: webhook?.isActive ?? true,
+    },
   });
 
-  const availableEvents: WebhookEvent[] = [
-    { id: 'user.created', name: 'User Created', description: 'When a new user is created' },
-    { id: 'user.updated', name: 'User Updated', description: 'When a user is updated' },
-    { id: 'user.deleted', name: 'User Deleted', description: 'When a user is deleted' },
-    { id: 'team.created', name: 'Team Created', description: 'When a new team is created' },
-    { id: 'team.updated', name: 'Team Updated', description: 'When a team is updated' },
-    { id: 'team.deleted', name: 'Team Deleted', description: 'When a team is deleted' },
-  ];
+  const selectedEvents = watch('events');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await onSubmit(formData);
-  };
-
-  const toggleEvent = (eventId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      events: prev.events.includes(eventId)
-        ? prev.events.filter((e) => e !== eventId)
-        : [...prev.events, eventId],
-    }));
+  const handleFormSubmit = async (values: WebhookFormValues) => {
+    try {
+      setIsLoading(true);
+      await onSubmit(values);
+    } catch (error) {
+      console.error('Error submitting webhook:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-4">
-        <div>
-          <label htmlFor="url" className="block text-sm font-medium">
-            {t('webhook.url')}
-          </label>
-          <Input
-            id="url"
-            type="url"
-            value={formData.url}
-            onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-            required
-            placeholder="https://your-domain.com/webhook"
-            className="mt-1"
-          />
-        </div>
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+      <div>
+        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+          Name
+        </label>
+        <Input
+          id="name"
+          type="text"
+          {...register('name')}
+          className="mt-1"
+          error={errors.name?.message}
+        />
+      </div>
 
-        <div>
-          <label htmlFor="secret" className="block text-sm font-medium">
-            {t('webhook.secret')}
-          </label>
-          <Input
-            id="secret"
-            type="text"
-            value={formData.secret}
-            onChange={(e) => setFormData({ ...formData, secret: e.target.value })}
-            required
-            placeholder="webhook-secret"
-            className="mt-1"
-          />
-        </div>
+      <div>
+        <label htmlFor="url" className="block text-sm font-medium text-gray-700">
+          Webhook URL
+        </label>
+        <Input
+          id="url"
+          type="url"
+          {...register('url')}
+          className="mt-1"
+          error={errors.url?.message}
+        />
+      </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            {t('webhook.events')}
-          </label>
-          <div className="space-y-2">
-            {availableEvents.map((event) => (
-              <div key={event.id} className="flex items-center">
-                <Checkbox
-                  id={event.id}
-                  checked={formData.events.includes(event.id)}
-                  onCheckedChange={() => toggleEvent(event.id)}
-                />
-                <label htmlFor={event.id} className="ml-2 text-sm">
-                  {event.name}
-                </label>
-              </div>
-            ))}
-          </div>
-        </div>
+      <div>
+        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+          Description (optional)
+        </label>
+        <Textarea
+          id="description"
+          {...register('description')}
+          className="mt-1"
+          error={errors.description?.message}
+        />
+      </div>
 
-        <div className="flex items-center">
-          <Checkbox
-            id="enabled"
-            checked={formData.enabled}
-            onCheckedChange={(checked) =>
-              setFormData({ ...formData, enabled: checked as boolean })
-            }
-          />
-          <label htmlFor="enabled" className="ml-2 text-sm">
-            {t('webhook.enabled')}
-          </label>
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Events</label>
+        <div className="mt-2 space-y-2">
+          {AVAILABLE_EVENTS.map((event) => (
+            <div key={event} className="flex items-center">
+              <Checkbox
+                id={event}
+                checked={selectedEvents?.includes(event)}
+                onCheckedChange={(checked) => {
+                  const currentEvents = selectedEvents || [];
+                  if (checked) {
+                    setValue('events', [...currentEvents, event]);
+                  } else {
+                    setValue(
+                      'events',
+                      currentEvents.filter((e) => e !== event)
+                    );
+                  }
+                }}
+              />
+              <label htmlFor={event} className="ml-2 text-sm text-gray-600">
+                {event}
+              </label>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="flex justify-end space-x-2">
-        {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel}>
-            {t('common.cancel')}
-          </Button>
-        )}
-        <Button type="submit">
-          {webhook ? t('common.update') : t('common.create')}
-        </Button>
+      <div className="flex items-center">
+        <Checkbox
+          id="isActive"
+          checked={watch('isActive')}
+          onCheckedChange={(checked) => setValue('isActive', !!checked)}
+        />
+        <label htmlFor="isActive" className="ml-2 text-sm text-gray-600">
+          Active
+        </label>
       </div>
+
+      <Button type="submit" disabled={isLoading}>
+        {webhook ? 'Update Webhook' : 'Create Webhook'}
+      </Button>
     </form>
   );
-}
+};

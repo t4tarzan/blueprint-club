@@ -14,8 +14,9 @@ import GoogleReCAPTCHA from '../shared/GoogleReCAPTCHA';
 import ReCAPTCHA from 'react-google-recaptcha';
 import { maxLengthPolicies } from '@/lib/common';
 
-interface JoinProps {
+export interface JoinProps {
   recaptchaSiteKey: string;
+  csrfToken?: string;
 }
 
 interface JoinFormValues {
@@ -40,7 +41,7 @@ const JoinUserSchema = Yup.object().shape({
   agreeToTerms: Yup.boolean().oneOf([true], 'You must agree to the terms and conditions'),
 });
 
-const Join = ({ recaptchaSiteKey }: JoinProps) => {
+const Join = ({ recaptchaSiteKey, csrfToken }: JoinProps) => {
   const router = useRouter();
   const { t } = useTranslation('common');
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);

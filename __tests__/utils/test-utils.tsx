@@ -1,107 +1,110 @@
 import React from 'react';
-import { render as rtlRender } from '@testing-library/react';
-import { SessionProvider } from 'next-auth/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { QueryClient } from '@tanstack/query-core';
+import { QueryClientProvider } from '@tanstack/react-query/build/legacy/QueryClientProvider';
 import { Session } from 'next-auth';
-import '@testing-library/jest-dom';
-import { Role } from '../../types';
+import { Team, User, TeamMember, Role } from '@prisma/client';
 
-// Extend Jest matchers
-declare global {
-  namespace jest {
-    interface Matchers<R> {
-      toBeInTheDocument(): R;
-      toHaveBeenCalledWith(...args: any[]): R;
-      toContain(item: any): R;
-      toBe(expected: any): R;
-      toEqual(expected: any): R;
-      toMatch(pattern: string | RegExp): R;
-    }
-  }
+type SerializedUser = {
+  id: string;
+  name: string | null;
+  email: string;
+  image: string | null;
+  emailVerified: Date | null;
+  membershipTier: string;
+  teams: {
+    id: string;
+    name: string;
+    slug: string;
+    role: Role;
+  }[];
+};
+
+jest.mock('next-auth/react', () => ({
+  SessionProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  getSession: jest.fn(),
+}));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+    },
+  },
+});
+
+type WrapperProps = {
+  children: React.ReactNode;
+  session?: Session | null;
+};
+
+export function Wrapper({ children, session = null }: WrapperProps) {
+  return (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
 }
 
-// Mock session data
+export function renderWithProviders(ui: React.ReactNode, { session, ...renderOptions }: { session?: Session | null } = {}) {
+  return render(ui, { wrapper: (props) => <Wrapper {...props} session={session} />, ...renderOptions });
+}
+
+const now = new Date().toISOString();
+
+export const mockUser: SerializedUser = {
+  id: '1',
+  name: 'Test User',
+  email: 'test@example.com',
+  image: null,
+  emailVerified: null,
+  membershipTier: 'free',
+  teams: [
+    {
+      id: '1',
+      name: 'Test Team',
+      slug: 'test-team',
+      role: 'ADMIN',
+    },
+  ],
+};
+
+export const mockTeam: Team & { members: TeamMember[] } = {
+  id: 'team-1',
+  name: 'Test Team',
+  image: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  slug: 'test-team',
+  description: null,
+  domain: null,
+  features: [],
+  createdById: mockUser.id,
+  members: [{
+    id: 'member-1',
+    teamId: 'team-1',
+    userId: mockUser.id,
+    role: 'ADMIN',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }],
+};
+
+export const mockAuditLog = {
+  id: 'audit-1',
+  teamId: mockTeam.id,
+  userId: mockUser.id,
+  action: 'TEAM_MEMBER_ADDED',
+  category: 'TEAM',
+  status: 'SUCCESS',
+  metadata: { role: 'ADMIN' },
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  team: mockTeam,
+  user: mockUser,
+};
+
 export const mockSession: Session = {
-  user: {
-    id: 'user-1',
-    name: 'Test User',
-    email: 'test@example.com',
-    image: null,
-    emailVerified: new Date(),
-  },
+  user: mockUser,
   expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
 };
 
-// Custom render function that includes providers
-function render(
-  ui: React.ReactElement,
-  {
-    session = mockSession,
-    ...renderOptions
-  } = {}
-) {
-  function Wrapper({ children }: { children: React.ReactNode }) {
-    return (
-      <SessionProvider session={session}>
-        {children}
-      </SessionProvider>
-    );
-  }
-  return rtlRender(ui, { wrapper: Wrapper, ...renderOptions });
-}
-
-// Mock team data
-export const mockTeam = {
-  id: 'team-1',
-  name: 'Test Team',
-  slug: 'test-team',
-  domain: 'test.com',
-  scimEnabled: false,
-  scimToken: null,
-  features: ['audit-logs', 'scim'],
-  members: [{
-    id: 'member-1',
-    userId: 'user-1',
-    teamId: 'team-1',
-    role: 'ADMIN' as Role,
-    user: {
-      id: 'user-1',
-      name: 'Test User',
-      email: 'test@example.com',
-      role: 'ADMIN' as Role,
-    },
-    team: null as any, // Avoid circular reference
-  }],
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-};
-
-// Mock audit log data
-export const mockAuditLog = {
-  id: 'log-1',
-  teamId: 'team-1',
-  userId: 'user-1',
-  action: 'user.login',
-  category: 'auth',
-  status: 'success',
-  ipAddress: '127.0.0.1',
-  userAgent: 'Mozilla/5.0',
-  metadata: {},
-  createdAt: new Date().toISOString(),
-  user: {
-    name: 'Test User',
-    email: 'test@example.com',
-  },
-};
-
-// Mock API response
-export function mockApiResponse(status: number, data: any) {
-  return Promise.resolve({
-    ok: status >= 200 && status < 300,
-    status,
-    json: () => Promise.resolve(data),
-  });
-}
-
-// Re-export everything
-export * from '@testing-library/react';
-export { render };
+export { screen, fireEvent, waitFor };

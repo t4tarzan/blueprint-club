@@ -9,21 +9,21 @@ export default async function handler(
 ) {
   const session = await getSession({ req });
 
-  if (!session?.user) {
+  if (!session) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
   const teamId = req.query.id as string;
 
-  // Check if user has permission to view audit logs
-  const hasPermission = await hasTeamRole({
-    userId: session.user.id,
-    teamId,
-    roles: ['OWNER', 'ADMIN'],
-  });
+  if (!teamId) {
+    return res.status(400).json({ message: 'Team ID is required' });
+  }
 
-  if (!hasPermission) {
-    return res.status(403).json({ message: 'Insufficient permissions' });
+  // Check if user has access to the team
+  const hasAccess = await hasTeamRole(session.user.id, teamId, ['ADMIN', 'MEMBER']);
+
+  if (!hasAccess) {
+    return res.status(403).json({ message: 'Forbidden' });
   }
 
   const auditService = AuditService.getInstance();
@@ -41,18 +41,14 @@ export default async function handler(
       } = req.query;
 
       try {
-        const logs = await auditService.getLogs({
-          teamId,
-          category: category as any,
-          action: action as any,
-          status: status as any,
-          startDate: startDate ? new Date(startDate as string) : undefined,
-          endDate: endDate ? new Date(endDate as string) : undefined,
+        const result = await auditService.findByTeam(teamId, {
           page: page ? parseInt(page as string, 10) : undefined,
           limit: limit ? parseInt(limit as string, 10) : undefined,
+          startDate: startDate ? (startDate as string) : undefined,
+          endDate: endDate ? (endDate as string) : undefined,
         });
 
-        return res.status(200).json(logs);
+        return res.status(200).json(result);
       } catch (error) {
         console.error('Failed to fetch audit logs:', error);
         return res.status(500).json({ message: 'Internal server error' });

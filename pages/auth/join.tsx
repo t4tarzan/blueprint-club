@@ -8,8 +8,9 @@ import { Join as JoinComponent } from '@/components/auth';
 
 const Join: NextPageWithLayout<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
   csrfToken,
+  recaptchaSiteKey,
 }) => {
-  return <JoinComponent csrfToken={csrfToken} />;
+  return <JoinComponent csrfToken={csrfToken} recaptchaSiteKey={recaptchaSiteKey} />;
 };
 
 Join.getLayout = function getLayout(page: ReactElement) {
@@ -19,9 +20,14 @@ Join.getLayout = function getLayout(page: ReactElement) {
 export const getServerSideProps = async (context: GetServerSidePropsContext) => {
   const { locale } = context;
 
+  if (!process.env.RECAPTCHA_SITE_KEY) {
+    throw new Error('Missing RECAPTCHA_SITE_KEY environment variable');
+  }
+
   return {
     props: {
       csrfToken: await getCsrfToken(context),
+      recaptchaSiteKey: process.env.RECAPTCHA_SITE_KEY,
       ...(await serverSideTranslations(locale || 'en', ['common'])),
     },
   };

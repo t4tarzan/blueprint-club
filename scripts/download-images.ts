@@ -1,9 +1,29 @@
-const fs = require('fs');
-const path = require('path');
-const axios = require('axios');
-const sharp = require('sharp');
+import * as fs from 'fs';
+import * as path from 'path';
+import axios from 'axios';
+import sharp from 'sharp';
 
-const imageUrls = {
+interface ImageUrls {
+  hero: {
+    main: string;
+    pattern: string;
+  };
+  programs: {
+    [key: string]: {
+      hero: string;
+      overview: string;
+    };
+  };
+}
+
+interface ResizeOptions {
+  width?: number;
+  height?: number;
+  fit?: keyof sharp.FitEnum;
+  position?: string;
+}
+
+const imageUrls: ImageUrls = {
   hero: {
     main: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c',
     pattern: '/background-pattern.svg',
@@ -28,7 +48,7 @@ const imageUrls = {
   },
 };
 
-async function downloadAndOptimizeImage(url, outputPath, options = {}) {
+async function downloadAndOptimizeImage(url: string, outputPath: string, options: ResizeOptions = {}) {
   try {
     const response = await axios.get(url, { responseType: 'arraybuffer' });
     const buffer = Buffer.from(response.data, 'binary');
@@ -52,26 +72,26 @@ async function downloadAndOptimizeImage(url, outputPath, options = {}) {
 }
 
 async function downloadAllImages() {
-  const publicDir = path.join(process.cwd(), 'public');
-
   // Download hero images
   await downloadAndOptimizeImage(
     imageUrls.hero.main,
-    path.join(publicDir, 'images/hero/main-hero.jpg'),
+    path.join(process.cwd(), 'public/images/hero.jpg'),
     { width: 1920, height: 1080, fit: 'cover' }
   );
 
   // Download program images
-  for (const [program, images] of Object.entries(imageUrls.programs)) {
-    for (const [type, url] of Object.entries(images)) {
-      await downloadAndOptimizeImage(
-        url,
-        path.join(publicDir, `images/programs/${program}/${type}.jpg`),
-        type === 'hero' 
-          ? { width: 1200, height: 800, fit: 'cover' }
-          : { width: 800, height: 600, fit: 'cover' }
-      );
-    }
+  for (const [program, urls] of Object.entries(imageUrls.programs)) {
+    await downloadAndOptimizeImage(
+      urls.hero,
+      path.join(process.cwd(), `public/images/programs/${program}-hero.jpg`),
+      { width: 1280, height: 720, fit: 'cover' }
+    );
+
+    await downloadAndOptimizeImage(
+      urls.overview,
+      path.join(process.cwd(), `public/images/programs/${program}-overview.jpg`),
+      { width: 800, height: 600, fit: 'cover' }
+    );
   }
 }
 

@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { Team, User, TeamMember, Invitation } from '@prisma/client';
+import { Team, User, TeamMember, Invitation, Role } from '@prisma/client';
 
 // Create reusable transporter
 const transporter = nodemailer.createTransport({
@@ -51,7 +51,7 @@ const baseTemplate = (content: string) => `
   <div class="container">
     ${content}
     <div class="footer">
-      <p>This email was sent from Blueprint Club. If you did not expect this email, please ignore it.</p>
+      This is an automated email. Please do not reply to this message.
     </div>
   </div>
 </body>
@@ -61,125 +61,132 @@ const baseTemplate = (content: string) => `
 // Email templates
 const templates = {
   teamInvitation: (invitation: Invitation & { team: Team; inviter: User }) => ({
-    subject: `Invitation to join ${invitation.team.name} on Blueprint Club`,
+    subject: `Invitation to join ${invitation.team.name}`,
     html: baseTemplate(`
       <h1>Team Invitation</h1>
       <p>Hello,</p>
-      <p>${invitation.inviter.name || invitation.inviter.email} has invited you to join the team "${invitation.team.name}" on Blueprint Club.</p>
-      <p>You have been invited as a ${invitation.role.toLowerCase()}.</p>
-      <a href="${process.env.NEXT_PUBLIC_APP_URL}/teams/join/${invitation.token}" class="button">
-        Accept Invitation
-      </a>
-      <p>This invitation will expire in 7 days.</p>
+      <p>${invitation.inviter.name || invitation.inviter.email} has invited you to join ${invitation.team.name}.</p>
+      <a href="${process.env.NEXTAUTH_URL}/auth/join?token=${invitation.token}" class="button">Accept Invitation</a>
     `),
   }),
 
   roleChange: (
     team: Team,
     member: TeamMember & { user: User },
-    oldRole: string,
-    newRole: string,
+    oldRole: Role,
+    newRole: Role,
     updatedBy: User
   ) => ({
-    subject: `Role Update in ${team.name}`,
+    subject: `Role Updated in ${team.name}`,
     html: baseTemplate(`
       <h1>Role Update</h1>
       <p>Hello ${member.user.name || member.user.email},</p>
-      <p>Your role in the team "${team.name}" has been updated from ${oldRole.toLowerCase()} to ${newRole.toLowerCase()} by ${
-      updatedBy.name || updatedBy.email
-    }.</p>
-      <a href="${process.env.NEXT_PUBLIC_APP_URL}/teams/${team.slug}" class="button">
-        View Team
-      </a>
+      <p>Your role in ${team.name} has been updated from ${oldRole} to ${newRole} by ${updatedBy.name || updatedBy.email}.</p>
     `),
   }),
 
-  ssoConfigUpdate: (team: Team, updatedBy: User) => ({
-    subject: `SSO Configuration Updated for ${team.name}`,
-    html: baseTemplate(`
-      <h1>SSO Configuration Update</h1>
-      <p>Hello,</p>
-      <p>The SSO configuration for team "${team.name}" has been updated by ${updatedBy.name || updatedBy.email}.</p>
-      <p>If you did not make this change, please contact your team administrator immediately.</p>
-      <a href="${process.env.NEXT_PUBLIC_APP_URL}/teams/${team.slug}/sso" class="button">
-        View SSO Settings
-      </a>
-    `),
-  }),
-
-  memberRemoval: (team: Team, member: User, removedBy: User) => ({
+  memberRemoval: (team: Team, user: User, removedBy: User) => ({
     subject: `Removed from ${team.name}`,
     html: baseTemplate(`
-      <h1>Team Membership Update</h1>
-      <p>Hello ${member.name || member.email},</p>
-      <p>You have been removed from the team "${team.name}" by ${removedBy.name || removedBy.email}.</p>
-      <p>If you believe this was done in error, please contact your team administrator.</p>
+      <h1>Team Membership Removed</h1>
+      <p>Hello ${user.name || user.email},</p>
+      <p>You have been removed from ${team.name} by ${removedBy.name || removedBy.email}.</p>
+    `),
+  }),
+
+  verificationEmail: (email: string, token: string) => ({
+    subject: 'Verify your email address',
+    html: baseTemplate(`
+      <h1>Email Verification</h1>
+      <p>Hello,</p>
+      <p>Please click the button below to verify your email address:</p>
+      <a href="${process.env.NEXTAUTH_URL}/auth/verify?token=${token}" class="button">Verify Email</a>
+    `),
+  }),
+
+  passwordReset: (email: string, token: string) => ({
+    subject: 'Reset your password',
+    html: baseTemplate(`
+      <h1>Password Reset</h1>
+      <p>Hello,</p>
+      <p>Please click the button below to reset your password:</p>
+      <a href="${process.env.NEXTAUTH_URL}/auth/reset-password?token=${token}" class="button">Reset Password</a>
     `),
   }),
 };
 
-// Email sending functions
-export const sendEmail = async (to: string, template: { subject: string; html: string }) => {
+// Email sending function
+async function sendEmail(to: string, subject: string, html: string) {
   try {
     await transporter.sendMail({
       from: process.env.SMTP_FROM,
       to,
-      subject: template.subject,
-      html: template.html,
+      subject,
+      html,
     });
+    return { success: true };
   } catch (error) {
     console.error('Failed to send email:', error);
-    throw error;
+    return { success: false, error };
   }
-};
+}
 
 export const emailService = {
-  /**
-   * Send team invitation email
-   */
-  sendTeamInvitation: async (invitation: Invitation & { team: Team; inviter: User }) => {
-    return sendEmail(invitation.email, templates.teamInvitation(invitation));
+  async sendTeamInvitation(invitation: Invitation & { team: Team; inviter: User }) {
+    return sendEmail(invitation.email, templates.teamInvitation(invitation).subject, templates.teamInvitation(invitation).html);
   },
 
-  /**
-   * Send role change notification
-   */
-  sendRoleChangeNotification: async (
+  async sendRoleChangeNotification(
     team: Team,
     member: TeamMember & { user: User },
-    oldRole: string,
-    newRole: string,
+    oldRole: Role,
+    newRole: Role,
     updatedBy: User
-  ) => {
-    return sendEmail(
-      member.user.email,
-      templates.roleChange(team, member, oldRole, newRole, updatedBy)
-    );
+  ) {
+    return sendEmail(member.user.email!, templates.roleChange(team, member, oldRole, newRole, updatedBy).subject, templates.roleChange(team, member, oldRole, newRole, updatedBy).html);
   },
 
-  /**
-   * Send SSO configuration update notification to team owners and admins
-   */
-  sendSSOConfigUpdateNotification: async (
-    team: Team,
-    updatedBy: User,
-    adminEmails: string[]
-  ) => {
-    return Promise.all(
-      adminEmails.map((email) =>
-        sendEmail(email, templates.ssoConfigUpdate(team, updatedBy))
-      )
-    );
+  async sendMemberRemovalNotification(team: Team, user: User, removedBy: User) {
+    return sendEmail(user.email!, templates.memberRemoval(team, user, removedBy).subject, templates.memberRemoval(team, user, removedBy).html);
   },
 
-  /**
-   * Send member removal notification
-   */
-  sendMemberRemovalNotification: async (
-    team: Team,
-    member: User,
-    removedBy: User
-  ) => {
-    return sendEmail(member.email, templates.memberRemoval(team, member, removedBy));
+  async sendVerificationEmail(email: string, token: string) {
+    return sendEmail(email, templates.verificationEmail(email, token).subject, templates.verificationEmail(email, token).html);
   },
+
+  async sendPasswordResetEmail(email: string, token: string) {
+    return sendEmail(email, templates.passwordReset(email, token).subject, templates.passwordReset(email, token).html);
+  },
+
+  async sendTeamInvitationEmail(email: string, teamName: string, inviterName: string) {
+    const subject = `You've been invited to join ${teamName}`;
+    const html = `
+      <p>Hi there,</p>
+      <p>${inviterName} has invited you to join the team ${teamName}.</p>
+      <p>Click the link below to accept the invitation:</p>
+      <p><a href="${process.env.NEXTAUTH_URL}/auth/join">Join Team</a></p>
+    `;
+    return sendEmail(email, subject, html);
+  },
+
+  async sendRoleChangeEmail(email: string, teamName: string, newRole: string) {
+    const subject = `Your role has been updated in ${teamName}`;
+    const html = `
+      <p>Hi there,</p>
+      <p>Your role in the team ${teamName} has been updated to ${newRole}.</p>
+      <p>Visit your team settings to view the changes:</p>
+      <p><a href="${process.env.NEXTAUTH_URL}/teams">View Team Settings</a></p>
+    `;
+    return sendEmail(email, subject, html);
+  },
+
+  async sendMemberRemovalEmail(email: string, teamName: string) {
+    const subject = `You have been removed from ${teamName}`;
+    const html = `
+      <p>Hi there,</p>
+      <p>You have been removed from the team ${teamName}.</p>
+      <p>If you believe this was a mistake, please contact the team administrator.</p>
+    `;
+    return sendEmail(email, subject, html);
+  }
 };

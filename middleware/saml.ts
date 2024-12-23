@@ -1,59 +1,38 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { SAMLService } from '../lib/boxyhq/saml-service';
+import { env } from '@/env.mjs';
+
+interface SAMLClientInstance {
+  getMetadata: (tenant: string, product: string) => Promise<string>;
+  getAuthorizationUrl: (options: { tenant: string; product: string; redirectUrl: string; state?: string }) => Promise<string>;
+}
 
 export async function samlMiddleware(request: NextRequest) {
-  const samlService = SAMLService.getInstance();
-
   // Only handle SAML-related paths
   if (!request.nextUrl.pathname.startsWith('/api/auth/saml')) {
     return NextResponse.next();
   }
 
   try {
-    // Handle SAML metadata requests
-    if (request.nextUrl.pathname === '/api/auth/saml/metadata') {
-      const tenant = request.nextUrl.searchParams.get('tenant');
-      const product = request.nextUrl.searchParams.get('product');
+    const tenant = request.nextUrl.searchParams.get('tenant') ?? 'default';
+    const product = request.nextUrl.searchParams.get('product') ?? 'default';
 
-      if (!tenant || !product) {
-        return new NextResponse('Missing tenant or product', { status: 400 });
-      }
+    // Redirect to BoxyHQ OAuth endpoint
+    const oauthUrl = new URL('/api/oauth/authorize', env.BOXYHQ_SAML_ISSUER);
+    oauthUrl.searchParams.set('client_id', env.BOXYHQ_SAML_CLIENT_ID);
+    oauthUrl.searchParams.set('redirect_uri', `${env.NEXTAUTH_URL}/api/auth/callback/boxyhq-saml`);
+    oauthUrl.searchParams.set('response_type', 'code');
+    oauthUrl.searchParams.set('scope', 'openid email profile');
+    oauthUrl.searchParams.set('tenant', tenant);
+    oauthUrl.searchParams.set('product', product);
 
-      const metadata = await samlService.getMetadata(tenant, product);
-      return new NextResponse(metadata, {
-        headers: {
-          'Content-Type': 'text/xml',
-        },
-      });
-    }
-
-    // Handle SAML authorization requests
-    if (request.nextUrl.pathname === '/api/auth/saml/authorize') {
-      const tenant = request.nextUrl.searchParams.get('tenant');
-      const product = request.nextUrl.searchParams.get('product');
-      const redirectUri = request.nextUrl.searchParams.get('redirect_uri');
-      const state = request.nextUrl.searchParams.get('state');
-
-      if (!tenant || !product || !redirectUri) {
-        return new NextResponse('Missing required parameters', { status: 400 });
-      }
-
-      const authUrl = await samlService.getAuthorizationUrl({
-        tenant,
-        product,
-        redirectUri,
-        state: state || undefined,
-      });
-
-      return NextResponse.redirect(authUrl);
-    }
-
-    // Continue to API route for other SAML endpoints
-    return NextResponse.next();
+    return NextResponse.redirect(oauthUrl);
   } catch (error) {
-    console.error('SAML Middleware Error:', error);
-    return new NextResponse('Internal Server Error', { status: 500 });
+    console.error('SAML error:', error);
+    return NextResponse.json(
+      { message: 'Internal Server Error' },
+      { status: 500 }
+    );
   }
 }
 

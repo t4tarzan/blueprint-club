@@ -1,33 +1,20 @@
-import { JacksonOption } from '@boxyhq/saml-jackson';
+import type { SAMLServiceConfig } from '@/lib/types/boxyhq';
+import { prisma } from '@/lib/prisma';
 
-export const getJacksonOption = (): JacksonOption => {
-  return {
-    externalUrl: process.env.BOXYHQ_SAML_JACKSON_URL,
-    saml: {
-      // callback URL to which the IdP will redirect after successful authentication
-      callbackUrl: `${process.env.NEXTAUTH_URL}/api/auth/callback/boxyhq-saml`,
-      // path to handle SAML response from IdP
-      path: '/api/auth/saml/callback',
-      // issuer of the SAML request
-      issuer: process.env.BOXYHQ_ENTERPRISE_SLUG || 'blueprint-club',
-    },
-    // Admin API configuration
-    admin: {
-      email: process.env.BOXYHQ_ADMIN_EMAIL,
-      apiKey: process.env.BOXYHQ_LICENSE_KEY,
-    },
-    // Database configuration for SAML Jackson
-    db: {
-      engine: 'sql',
-      type: 'postgres',
-      url: process.env.DATABASE_URL,
-    },
-    // Optional: Configure product name and logo
-    product: {
-      name: 'Blueprint Club',
-      logo: 'https://www.wnbpc.com/logo.png', // Update with your actual logo URL
-    },
-  };
+export const samlConfig: SAMLServiceConfig = {
+  externalUrl: process.env.BOXYHQ_SAML_JACKSON_URL || 'http://localhost:5225',
+  samlPath: '/api/auth/saml',
+  samlAudience: process.env.BOXYHQ_ENTERPRISE_SLUG || 'blueprint-club',
+  redirectUrl: process.env.NEXTAUTH_URL || 'http://localhost:3000',
+  db: {
+    engine: 'prisma',
+    prisma,
+  },
+  idpEnabled: true,
+  oidcEnabled: false,
+  dsyncEnabled: false,
+  apiEnabled: true,
+  clientSecretVerifier: process.env.BOXYHQ_CLIENT_SECRET_VERIFIER || 'your-secret-verifier',
 };
 
 // Types for enhanced type safety

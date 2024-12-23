@@ -26,17 +26,9 @@ export async function middleware(request: NextRequest) {
 
   // Get user's subscription
   const user = await prisma.user.findUnique({
-    where: { email: token.email as string },
+    where: { id: token.sub as string },
     include: {
-      subscriptions: {
-        where: {
-          status: 'ACTIVE',
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-        take: 1,
-      },
+      subscription: true,
     },
   });
 
@@ -44,7 +36,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/signin', request.url));
   }
 
-  const activeSubscription = user.subscriptions[0];
+  const activeSubscription = user.subscription;
 
   // If no active subscription, redirect to billing
   if (!activeSubscription && !request.nextUrl.pathname.startsWith('/settings/billing')) {

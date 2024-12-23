@@ -1,21 +1,20 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiRequest, NextApiResponse } from 'next';
 import { hash } from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
-import { Role } from '@prisma/client';
-import { sendVerificationEmail } from '@/lib/email';
-import { randomBytes } from 'crypto';
+import { defaultHeaders } from '@/lib/common';
+import { emailService } from '@/lib/email';
+import type { ApiError } from '@/types';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
   try {
-    const { name, email, password, team } = req.body;
-    console.log('Registration attempt:', { name, email, team });
+    if (req.method !== 'POST') {
+      return res.status(405).json({ message: 'Method not allowed' });
+    }
 
-    if (!name || !email || !password || !team) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    const { name, email, password, team } = req.body;
+
+    if (!email || !password || !team) {
+      return res.status(400).json({ message: 'Missing required fields' });
     }
 
     // Check if user already exists
@@ -24,17 +23,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     if (existingUser) {
-      return res.status(400).json({ error: 'User already exists' });
+      return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Generate verification token
-    const verificationToken = randomBytes(32).toString('hex');
-    const tokenExpiry = new Date();
-    tokenExpiry.setHours(tokenExpiry.getHours() + 24); // Token expires in 24 hours
-
     // Hash password
-    const hashedPassword = await hash(password, 12);
-    console.log('Password hashed successfully');
+    const hashedPassword = await hash(password, 10);
 
     try {
       // Use transaction to ensure all operations succeed or fail together
@@ -45,9 +38,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             name,
             email,
             password: hashedPassword,
+            membershipTier: 'FREE',
           },
         });
-        console.log('User created:', { id: user.id, email: user.email });
 
         // Create team
         const newTeam = await tx.team.create({
@@ -56,45 +49,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             slug: team.toLowerCase().replace(/\s+/g, '-'),
           },
         });
-        console.log('Team created:', newTeam);
 
         // Create team membership
         const teamMember = await tx.teamMember.create({
           data: {
             teamId: newTeam.id,
             userId: user.id,
-            role: Role.ADMIN,
+            role: 'ADMIN',
           },
         });
-        console.log('Team membership created:', teamMember);
 
         // Create verification token
-        const verificationRecord = await tx.verificationToken.create({
+        const token = await tx.verificationToken.create({
           data: {
-            token: verificationToken,
-            email: user.email,
-            expires: tokenExpiry,
+            identifier: email,
+            token: require('crypto').randomBytes(32).toString('hex'),
+            expires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
           },
         });
-        console.log('Verification token created');
 
-        return { user, team: newTeam, teamMember, verificationRecord };
+        return { user, team: newTeam, teamMember, token };
       });
 
       // Send verification email
-      await sendVerificationEmail(result.user.email, verificationToken);
-      console.log('Verification email sent');
+      await emailService.sendVerificationEmail(result.user.email, result.token.token);
 
-      return res.status(200).json({ 
-        success: true,
-        message: 'Registration successful. Please check your email to verify your account.'
-      });
+      res.status(200).json({ message: 'User created successfully' });
     } catch (txError: any) {
       console.error('Transaction error:', txError);
-      return res.status(500).json({ error: 'Database transaction failed: ' + txError.message });
+      res.status(500).json({ message: 'Internal server error' });
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Registration error:', error);
-    return res.status(500).json({ error: 'Failed to create account: ' + error.message });
+    res.status(500).json({ message: 'Internal server error' });
   }
 }

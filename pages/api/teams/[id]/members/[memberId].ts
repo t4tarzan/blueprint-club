@@ -160,13 +160,7 @@ async function updateMember(req: NextApiRequest, res: NextApiResponse, session: 
     });
 
     // Send role change notification
-    await emailService.sendRoleChangeNotification(
-      team,
-      updatedMember,
-      currentMember.role,
-      role,
-      updater
-    );
+    await emailService.sendRoleChangeEmail(updatedMember.user.email!, team.name, role);
 
     return res.status(200).json(updatedMember);
   } catch (error) {
@@ -247,11 +241,7 @@ async function removeMember(req: NextApiRequest, res: NextApiResponse, session: 
     });
 
     // Send member removal notification
-    await emailService.sendMemberRemovalNotification(
-      team,
-      member.user,
-      remover
-    );
+    await emailService.sendMemberRemovalEmail(member.user.email!, team.name);
 
     return res.status(204).end();
   } catch (error) {

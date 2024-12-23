@@ -1,21 +1,85 @@
 import { getPlaiceholder } from 'plaiceholder';
 import type { ImageProps } from 'next/image';
 
-export interface BlurImageProps extends ImageProps {
+export interface BlurImageProps extends Omit<ImageProps, 'src' | 'alt'> {
+  src: string;
+  alt: string;
   blurDataURL?: string;
 }
 
-export async function getImageProps(src: string): Promise<BlurImageProps> {
+export async function getImagePlaceholder(src: string | Buffer): Promise<string> {
   try {
-    const { base64, img } = await getPlaiceholder(src, { size: 10 });
+    if (typeof src === 'string') {
+      const response = await fetch(src);
+      const buffer = Buffer.from(await response.arrayBuffer());
+      const { base64 } = await getPlaiceholder(buffer);
+      return base64;
+    }
+    const { base64 } = await getPlaiceholder(src);
+    return base64;
+  } catch (err) {
+    console.error('Error generating placeholder:', err);
+    return '';
+  }
+}
 
+export async function getImageDimensions(src: string | Buffer): Promise<{ width: number; height: number }> {
+  try {
+    if (typeof src === 'string') {
+      const response = await fetch(src);
+      const buffer = Buffer.from(await response.arrayBuffer());
+      const { metadata } = await getPlaiceholder(buffer);
+      return {
+        width: metadata.width || 0,
+        height: metadata.height || 0,
+      };
+    }
+    const { metadata } = await getPlaiceholder(src);
     return {
-      ...img,
-      blurDataURL: base64,
+      width: metadata.width || 0,
+      height: metadata.height || 0,
     };
-  } catch (error) {
-    console.error('Error generating blur data:', error);
-    return { src } as BlurImageProps;
+  } catch (err) {
+    console.error('Error getting image dimensions:', err);
+    return { width: 0, height: 0 };
+  }
+}
+
+export async function getImageProps(
+  src: string | Buffer,
+  alt: string = ''
+): Promise<BlurImageProps> {
+  try {
+    if (typeof src === 'string') {
+      const response = await fetch(src);
+      const buffer = Buffer.from(await response.arrayBuffer());
+      const { base64, metadata } = await getPlaiceholder(buffer);
+      return {
+        src,
+        alt,
+        width: metadata.width || 0,
+        height: metadata.height || 0,
+        blurDataURL: base64,
+        placeholder: 'blur',
+      };
+    }
+    const { base64, metadata } = await getPlaiceholder(src);
+    return {
+      src: '',  // Buffer input requires external source URL
+      alt,
+      width: metadata.width || 0,
+      height: metadata.height || 0,
+      blurDataURL: base64,
+      placeholder: 'blur',
+    };
+  } catch (err) {
+    console.error('Error getting image props:', err);
+    return {
+      src: typeof src === 'string' ? src : '',
+      alt,
+      width: 0,
+      height: 0,
+    };
   }
 }
 
@@ -23,55 +87,13 @@ export const imageDefaults = {
   hero: {
     width: 1920,
     height: 1080,
-    quality: 90,
-  },
-  program: {
-    width: 800,
-    height: 600,
-    quality: 85,
   },
   thumbnail: {
     width: 400,
     height: 300,
-    quality: 80,
   },
-};
-
-export const programImages = {
-  'bpc-adults': {
-    hero: '/images/programs/bpc-adults/hero.jpg',
-    overview: '/images/programs/bpc-adults/overview.jpg',
-    phases: [
-      '/images/programs/bpc-adults/phases/phase1.jpg',
-      '/images/programs/bpc-adults/phases/phase2.jpg',
-      '/images/programs/bpc-adults/phases/phase3.jpg',
-    ],
-  },
-  'bpc-schooling': {
-    hero: '/images/programs/bpc-schooling/hero.jpg',
-    overview: '/images/programs/bpc-schooling/overview.jpg',
-    phases: [
-      '/images/programs/bpc-schooling/phases/phase1.jpg',
-      '/images/programs/bpc-schooling/phases/phase2.jpg',
-      '/images/programs/bpc-schooling/phases/phase3.jpg',
-    ],
-  },
-  'bpcas': {
-    hero: '/images/programs/bpcas/hero.jpg',
-    overview: '/images/programs/bpcas/overview.jpg',
-    phases: [
-      '/images/programs/bpcas/phases/phase1.jpg',
-      '/images/programs/bpcas/phases/phase2.jpg',
-      '/images/programs/bpcas/phases/phase3.jpg',
-    ],
-  },
-  'white-noise': {
-    hero: '/images/programs/white-noise/hero.jpg',
-    overview: '/images/programs/white-noise/overview.jpg',
-    phases: [
-      '/images/programs/white-noise/phases/phase1.jpg',
-      '/images/programs/white-noise/phases/phase2.jpg',
-      '/images/programs/white-noise/phases/phase3.jpg',
-    ],
+  avatar: {
+    width: 128,
+    height: 128,
   },
 };

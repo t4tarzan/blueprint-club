@@ -1,185 +1,197 @@
-import { prisma } from '../prisma';
-import { getClientIp } from 'request-ip';
-import { NextApiRequest } from 'next';
+import { AuditLog, Prisma } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
+import { SerializedAuditLog } from '@/lib/types/prisma';
 
-export type AuditLogCategory =
-  | 'auth'
-  | 'team'
-  | 'member'
-  | 'sso'
-  | 'scim'
-  | 'api'
-  | 'security';
-
-export type AuditLogAction =
-  | 'user.login'
-  | 'user.logout'
-  | 'user.failed_login'
-  | 'team.create'
-  | 'team.update'
-  | 'team.delete'
-  | 'member.add'
-  | 'member.remove'
-  | 'member.update'
-  | 'sso.configure'
-  | 'sso.update'
-  | 'sso.delete'
-  | 'scim.enable'
-  | 'scim.disable'
-  | 'scim.token_regenerate'
-  | 'api.key_create'
-  | 'api.key_delete';
-
-export type AuditLogStatus = 'success' | 'failure';
-
-interface AuditLogData {
-  teamId?: string;
-  userId?: string;
-  action: AuditLogAction;
-  category: AuditLogCategory;
-  status: AuditLogStatus;
-  metadata?: Record<string, any>;
-  ipAddress?: string;
-  userAgent?: string;
+export enum AuditLogCategory {
+  TEAM = 'TEAM',
+  AUTH = 'AUTH',
+  PROGRAM = 'PROGRAM',
+  SETTINGS = 'SETTINGS',
+  BILLING = 'BILLING',
 }
+
+export enum AuditLogStatus {
+  SUCCESS = 'SUCCESS',
+  FAILURE = 'FAILURE',
+  PENDING = 'PENDING',
+}
+
+export enum AuditLogAction {
+  TEAM_MEMBER_ADDED = 'TEAM_MEMBER_ADDED',
+  TEAM_MEMBER_REMOVED = 'TEAM_MEMBER_REMOVED',
+  TEAM_MEMBER_ROLE_UPDATED = 'TEAM_MEMBER_ROLE_UPDATED',
+  TEAM_SETTINGS_UPDATED = 'TEAM_SETTINGS_UPDATED',
+  USER_LOGIN = 'USER_LOGIN',
+  USER_LOGOUT = 'USER_LOGOUT',
+  USER_REGISTERED = 'USER_REGISTERED',
+  USER_PASSWORD_RESET = 'USER_PASSWORD_RESET',
+  PROGRAM_CREATED = 'PROGRAM_CREATED',
+  PROGRAM_UPDATED = 'PROGRAM_UPDATED',
+  PROGRAM_DELETED = 'PROGRAM_DELETED',
+  BILLING_SUBSCRIPTION_UPDATED = 'BILLING_SUBSCRIPTION_UPDATED',
+  BILLING_PAYMENT_PROCESSED = 'BILLING_PAYMENT_PROCESSED',
+}
+
+export type AuditLogData = {
+  action: string;
+  actor: {
+    id: string;
+    email: string;
+    name?: string | null;
+  };
+  target: {
+    id: string | null;
+    type: string;
+    name?: string | null;
+  };
+  metadata?: Record<string, any> | null;
+};
 
 export class AuditService {
   private static instance: AuditService;
 
   private constructor() {}
 
-  public static getInstance(): AuditService {
+  static getInstance(): AuditService {
     if (!AuditService.instance) {
       AuditService.instance = new AuditService();
     }
     return AuditService.instance;
   }
 
-  /**
-   * Create an audit log entry
-   */
-  public async log(data: AuditLogData) {
-    try {
-      await prisma.auditLog.create({
-        data: {
-          teamId: data.teamId,
-          userId: data.userId,
-          action: data.action,
-          category: data.category,
-          status: data.status,
-          ipAddress: data.ipAddress,
-          userAgent: data.userAgent,
-          metadata: data.metadata || {},
+  async create(
+    teamId: string,
+    data: AuditLogData
+  ): Promise<AuditLog> {
+    const { action, actor, target, metadata } = data;
+
+    const auditLog = await prisma.auditLog.create({
+      data: {
+        teamId,
+        action,
+        actorId: actor.id,
+        actorEmail: actor.email,
+        actorName: actor.name || null,
+        entityId: target.id,
+        entityType: target.type,
+        entityName: target.name || null,
+        metadata: metadata ? (metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
+      },
+      include: {
+        team: {
+          select: {
+            id: true,
+            name: true,
+          },
         },
-      });
-    } catch (error) {
-      console.error('Failed to create audit log:', error);
-    }
+      },
+    });
+
+    return auditLog;
   }
 
-  /**
-   * Get audit logs with filtering and pagination
-   */
-  public async getLogs({
-    teamId,
-    userId,
-    category,
-    action,
-    status,
-    startDate,
-    endDate,
-    page = 1,
-    limit = 50,
-  }: {
-    teamId?: string;
-    userId?: string;
-    category?: AuditLogCategory;
-    action?: AuditLogAction;
-    status?: AuditLogStatus;
-    startDate?: Date;
-    endDate?: Date;
-    page?: number;
-    limit?: number;
-  }) {
+  async findByTeam(
+    teamId: string,
+    options: {
+      page?: number;
+      limit?: number;
+      startDate?: string;
+      endDate?: string;
+    } = {}
+  ): Promise<{
+    logs: SerializedAuditLog[];
+    totalPages: number;
+    currentPage: number;
+  }> {
+    const { page = 1, limit = 10, startDate, endDate } = options;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
-    if (teamId) where.teamId = teamId;
-    if (userId) where.userId = userId;
-    if (category) where.category = category;
-    if (action) where.action = action;
-    if (status) where.status = status;
-    if (startDate || endDate) {
-      where.createdAt = {};
-      if (startDate) where.createdAt.gte = startDate;
-      if (endDate) where.createdAt.lte = endDate;
-    }
+    const where: Prisma.AuditLogWhereInput = {
+      teamId,
+      ...(startDate && { createdAt: { gte: new Date(startDate) } }),
+      ...(endDate && { createdAt: { lte: new Date(endDate) } }),
+    };
 
     const [logs, total] = await Promise.all([
       prisma.auditLog.findMany({
         where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
         include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
           team: {
             select: {
               id: true,
               name: true,
-              slug: true,
             },
           },
         },
-        orderBy: {
-          createdAt: 'desc',
-        },
-        skip,
-        take: limit,
       }),
       prisma.auditLog.count({ where }),
     ]);
 
+    const totalPages = Math.ceil(total / limit);
+
     return {
-      logs,
-      pagination: {
-        total,
-        pages: Math.ceil(total / limit),
-        page,
-        limit,
-      },
+      logs: logs.map((log) => ({
+        id: log.id,
+        teamId: log.teamId,
+        action: log.action,
+        actorId: log.actorId,
+        actorEmail: log.actorEmail,
+        actorName: log.actorName,
+        entityId: log.entityId,
+        entityType: log.entityType,
+        entityName: log.entityName,
+        metadata: log.metadata,
+        createdAt: log.createdAt.toISOString(),
+        updatedAt: log.createdAt.toISOString(), // AuditLog doesn't have updatedAt, use createdAt
+        team: log.team ? {
+          id: log.team.id,
+          name: log.team.name,
+        } : null,
+      })),
+      totalPages,
+      currentPage: page,
     };
   }
 
-  /**
-   * Export audit logs to CSV
-   */
-  public async exportLogs({
-    teamId,
-    startDate,
-    endDate,
-  }: {
-    teamId: string;
-    startDate?: Date;
-    endDate?: Date;
-  }) {
-    const where: any = { teamId };
-    if (startDate || endDate) {
-      where.createdAt = {};
-      if (startDate) where.createdAt.gte = startDate;
-      if (endDate) where.createdAt.lte = endDate;
-    }
+  async findById(id: string): Promise<AuditLog | null> {
+    const log = await prisma.auditLog.findUnique({
+      where: { id },
+      include: {
+        team: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return log;
+  }
+
+  async findByTeamAndAction(
+    teamId: string,
+    action?: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<AuditLog[]> {
+    const where: Prisma.AuditLogWhereInput = {
+      teamId,
+      ...(action && { action }),
+      ...(startDate && { createdAt: { gte: new Date(startDate) } }),
+      ...(endDate && { createdAt: { lte: new Date(endDate) } }),
+    };
 
     const logs = await prisma.auditLog.findMany({
       where,
       include: {
-        user: {
+        team: {
           select: {
+            id: true,
             name: true,
-            email: true,
           },
         },
       },
@@ -188,69 +200,29 @@ export class AuditService {
       },
     });
 
-    // Convert logs to CSV format
-    const headers = [
-      'Timestamp',
-      'Action',
-      'Category',
-      'Status',
-      'User',
-      'IP Address',
-      'User Agent',
-      'Additional Details',
-    ];
-
-    const rows = logs.map((log) => [
-      log.createdAt.toISOString(),
-      log.action,
-      log.category,
-      log.status,
-      log.user ? `${log.user.name} (${log.user.email})` : 'System',
-      log.ipAddress || '',
-      log.userAgent || '',
-      JSON.stringify(log.metadata || {}),
-    ]);
-
-    return [headers, ...rows]
-      .map((row) => row.map((cell) => `"${cell}"`).join(','))
-      .join('\n');
+    return logs;
   }
 
-  /**
-   * Get request metadata for audit logging
-   */
-  public getRequestMetadata(req: NextApiRequest) {
+  async list(teamId: string, page: number = 1, perPage: number = 10) {
+    const logs = await prisma.auditLog.findMany({
+      where: { teamId },
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * perPage,
+      take: perPage,
+    });
+
+    const total = await prisma.auditLog.count({
+      where: { teamId },
+    });
+
     return {
-      ipAddress: getClientIp(req),
-      userAgent: req.headers['user-agent'],
+      logs,
+      total,
+      page,
+      perPage,
+      totalPages: Math.ceil(total / perPage),
     };
   }
-
-  /**
-   * Track user session activity
-   */
-  public async trackSessionActivity(sessionToken: string) {
-    try {
-      await prisma.session.update({
-        where: { sessionToken },
-        data: { lastActive: new Date() },
-      });
-    } catch (error) {
-      console.error('Failed to update session activity:', error);
-    }
-  }
-
-  /**
-   * Revoke user session
-   */
-  public async revokeSession(sessionToken: string) {
-    try {
-      await prisma.session.update({
-        where: { sessionToken },
-        data: { isRevoked: true },
-      });
-    } catch (error) {
-      console.error('Failed to revoke session:', error);
-    }
-  }
 }
+
+export default AuditService;

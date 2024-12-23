@@ -31,17 +31,18 @@ export default function TeamSubscriptionInfo() {
       const teamMembers = await teamMembersRes.json();
 
       if (subscription.subscription) {
-        const plan = Object.values(SUBSCRIPTION_PLANS).find(
-          (p) => p.priceId === subscription.subscription.priceId
-        );
+        const plans = Object.values(SUBSCRIPTION_PLANS);
+        const currentPlan = plans.find((p) => p.priceId === subscription.subscription.priceId);
 
-        if (plan) {
+        if (currentPlan) {
+          const maxMembers = currentPlan.maxTeamMembers || 0;
+
           setSubscriptionInfo({
             status: subscription.subscription.status,
-            plan,
+            plan: currentPlan,
             teamMembers: {
               current: teamMembers.count,
-              limit: plan.maxTeamMembers,
+              limit: maxMembers,
             },
           });
         }

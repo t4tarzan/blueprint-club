@@ -1,144 +1,126 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getSession } from 'next-auth/react';
-import { prisma } from '../../../../../lib/prisma';
-import { hasTeamRole } from '../../../../../lib/boxyhq/utils';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { checkTeamMemberLimit } from '@/lib/subscription';
 import { Role } from '@prisma/client';
-import { checkTeamMemberLimit } from '../../../../../lib/subscription';
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const session = await getSession({ req });
+  const session = await getServerSession(req, res, authOptions);
 
-  if (!session?.user) {
+  if (!session) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
   const teamId = req.query.id as string;
 
-  // Check if user is a member of the team
-  const isMember = await prisma.teamMember.findFirst({
-    where: {
-      teamId,
-      userId: session.user.id,
-    },
-  });
-
-  if (!isMember) {
-    return res.status(403).json({ message: 'Forbidden' });
-  }
-
-  switch (req.method) {
-    case 'GET':
-      return getMembers(req, res);
-    case 'POST':
-      return addMember(req, res, session);
-    default:
-      res.setHeader('Allow', ['GET', 'POST']);
-      return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
-  }
-}
-
-// Get team members
-async function getMembers(req: NextApiRequest, res: NextApiResponse) {
-  const teamId = req.query.id as string;
-
   try {
-    const members = await prisma.teamMember.findMany({
-      where: { teamId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
+    switch (req.method) {
+      case 'GET': {
+        const members = await prisma.teamMember.findMany({
+          where: { teamId },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true,
+                subscription: true,
+              },
+            },
           },
-        },
-      },
-    });
+        });
 
-    return res.status(200).json(members);
-  } catch (error) {
-    console.error('Failed to fetch team members:', error);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-}
+        return res.json(members);
+      }
 
-// Add new member directly (for development/testing)
-async function addMember(req: NextApiRequest, res: NextApiResponse, session: any) {
-  const teamId = req.query.id as string;
-  const { email, role = Role.MEMBER } = req.body;
+      case 'POST': {
+        const { email, role = Role.MEMBER } = req.body;
 
-  try {
-    // Check if user has permission to add members
-    const hasPermission = await hasTeamRole(teamId, session.user.id, [Role.ADMIN, Role.OWNER]);
-    if (!hasPermission) {
-      return res.status(403).json({ message: 'Insufficient permissions' });
-    }
+        if (!email || !role) {
+          return res.status(400).json({ message: 'Missing required fields' });
+        }
 
-    // Check subscription limits
-    const team = await prisma.team.findUnique({
-      where: { id: teamId },
-      select: { createdById: true },
-    });
-
-    if (!team) {
-      return res.status(404).json({ message: 'Team not found' });
-    }
-
-    const { allowed, limit, current } = await checkTeamMemberLimit(team.createdById);
-    if (!allowed) {
-      return res.status(403).json({
-        message: `Team member limit reached (${current}/${limit}). Please upgrade your subscription to add more members.`,
-      });
-    }
-
-    // Check if user exists
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: { id: true },
-    });
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Check if user is already a member
-    const existingMember = await prisma.teamMember.findFirst({
-      where: {
-        teamId,
-        userId: user.id,
-      },
-    });
-
-    if (existingMember) {
-      return res.status(400).json({ message: 'User is already a member of this team' });
-    }
-
-    // Add member
-    const member = await prisma.teamMember.create({
-      data: {
-        teamId,
-        userId: user.id,
-        role,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
+        // Check if user has permission to add members
+        const currentMember = await prisma.teamMember.findFirst({
+          where: {
+            teamId,
+            userId: session.user.id,
+            role: { in: [Role.ADMIN, Role.OWNER] },
           },
-        },
-      },
-    });
+        });
 
-    return res.status(201).json(member);
+        if (!currentMember) {
+          return res.status(403).json({ message: 'Insufficient permissions' });
+        }
+
+        const team = await prisma.team.findUnique({
+          where: { id: teamId },
+          include: { members: true },
+        });
+
+        if (!team) {
+          return res.status(404).json({ message: 'Team not found' });
+        }
+
+        const user = await prisma.user.findUnique({
+          where: { email },
+        });
+
+        if (!user) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+
+        const canAddMember = await checkTeamMemberLimit(team.id);
+
+        if (!canAddMember) {
+          return res.status(403).json({
+            message: 'Team member limit reached. Please upgrade your plan.',
+          });
+        }
+
+        const existingMember = await prisma.teamMember.findFirst({
+          where: {
+            teamId,
+            userId: user.id,
+          },
+        });
+
+        if (existingMember) {
+          return res.status(400).json({ message: 'User is already a member of this team' });
+        }
+
+        const member = await prisma.teamMember.create({
+          data: {
+            teamId,
+            userId: user.id,
+            role,
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                image: true,
+              },
+            },
+          },
+        });
+
+        return res.json(member);
+      }
+
+      default:
+        res.setHeader('Allow', ['GET', 'POST']);
+        return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
+    }
   } catch (error) {
-    console.error('Error adding team member:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    console.error('Error handling team members:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
   }
 }

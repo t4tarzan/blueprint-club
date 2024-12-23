@@ -1,26 +1,55 @@
-import NextAuth, { NextAuthOptions } from 'next-auth';
+import NextAuth, { NextAuthOptions, User as NextAuthUser } from 'next-auth';
+import { JWT } from 'next-auth/jwt';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { prisma } from '@/lib/prisma';
-import { comparePassword } from '@/lib/auth/password';
-import { Role } from '@/lib/types';
+import { comparePassword } from '@/lib/auth';
+import { Role } from '@/lib/types/prisma';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string | null;
+  image: string | null;
+  emailVerified: Date | null;
+  membershipTier: string;
+  teams: {
+    id: string;
+    name: string;
+    slug: string;
+    role: Role;
+  }[];
+}
+
+interface ExtendedSession {
+  user: AuthUser;
+  expires: string;
+}
+
+interface ExtendedJWT {
+  user: AuthUser;
+}
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
+      id: 'credentials',
+      name: 'Credentials',
       credentials: {
-        email: { label: 'Email', type: 'email' },
+        email: { label: 'Email', type: 'text' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials): Promise<AuthUser | null> {
         if (!credentials?.email || !credentials?.password) {
           console.log('Missing credentials');
           return null;
         }
 
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+          where: {
+            email: credentials.email,
+          },
           include: {
             teams: {
               include: {
@@ -30,8 +59,8 @@ export const authOptions: NextAuthOptions = {
           },
         });
 
-        if (!user) {
-          console.log('User not found');
+        if (!user || !user.password) {
+          console.log('User not found or no password');
           return null;
         }
 
@@ -42,19 +71,18 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        console.log('User authenticated:', user.email);
-
         return {
           id: user.id,
           email: user.email,
           name: user.name,
           image: user.image,
-          emailVerified: new Date(),
-          membershipTier: user.membershipTier || 'free',
+          emailVerified: user.emailVerified,
+          membershipTier: user.membershipTier,
           teams: user.teams.map((membership) => ({
             id: membership.team.id,
             name: membership.team.name,
-            role: membership.role as Role,
+            slug: membership.team.slug,
+            role: membership.role,
           })),
         };
       },
@@ -62,31 +90,20 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }): Promise<JWT & { user: AuthUser }> {
       if (user) {
-        token.id = user.id;
-        token.email = user.email;
-        token.name = user.name;
-        token.picture = user.image;
-        token.emailVerified = new Date();
-        token.membershipTier = user.membershipTier || 'free';
-        token.teams = user.teams;
+        token.user = user as AuthUser;
       }
-      return token;
+      return token as JWT & { user: AuthUser };
     },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-        session.user.email = token.email as string;
-        session.user.name = token.name as string;
-        session.user.image = token.picture as string;
-        session.user.emailVerified = new Date();
-        session.user.membershipTier = token.membershipTier as string;
-        session.user.teams = token.teams as any[];
-      }
-      return session;
+    async session({ session, token }): Promise<ExtendedSession> {
+      return {
+        ...session,
+        user: token.user as AuthUser,
+      };
     },
   },
   pages: {
@@ -95,7 +112,6 @@ export const authOptions: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === 'development',
-  trustHost: true,
 };
 
 export default NextAuth(authOptions);

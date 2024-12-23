@@ -106,7 +106,7 @@ const programData = {
     'Balanced focus on academics and modern skills'
   ],
   schedule: {
-    title: 'Daily Schedule',
+    days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
     times: [
       'Morning Sessions: Core academic learning',
       'Afternoon Labs: Practical, project-based sessions',

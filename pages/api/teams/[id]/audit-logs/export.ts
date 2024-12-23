@@ -1,56 +1,74 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getSession } from 'next-auth/react';
-import { AuditService } from '../../../../../lib/boxyhq/audit-service';
-import { hasTeamRole } from '../../../../../lib/boxyhq/utils';
+import { AuditService } from '@/lib/boxyhq/audit-service';
+import { TeamService } from '@/lib/team-service';
+import { createObjectCsvStringifier } from 'csv-writer';
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const session = await getSession({ req });
+  if (req.method !== 'GET') {
+    return res.status(405).json({ message: 'Method not allowed' });
+  }
 
-  if (!session?.user) {
+  const session = await getSession({ req });
+  if (!session) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
   const teamId = req.query.id as string;
-
-  // Check if user has permission to export audit logs
-  const hasPermission = await hasTeamRole({
-    userId: session.user.id,
-    teamId,
-    roles: ['OWNER', 'ADMIN'],
-  });
-
-  if (!hasPermission) {
-    return res.status(403).json({ message: 'Insufficient permissions' });
-  }
-
-  if (req.method !== 'GET') {
-    res.setHeader('Allow', ['GET']);
-    return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
-  }
-
-  const auditService = AuditService.getInstance();
   const { startDate, endDate } = req.query;
 
-  try {
-    const csv = await auditService.exportLogs({
-      teamId,
-      startDate: startDate ? new Date(startDate as string) : undefined,
-      endDate: endDate ? new Date(endDate as string) : undefined,
-    });
+  const teamService = new TeamService();
+  const auditService = AuditService.getInstance();
 
-    // Set headers for CSV download
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="audit-logs-${teamId}-${new Date().toISOString()}.csv"`
-    );
-
-    return res.status(200).send(csv);
-  } catch (error) {
-    console.error('Failed to export audit logs:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+  const team = await teamService.findById(teamId);
+  if (!team) {
+    return res.status(404).json({ message: 'Team not found' });
   }
+
+  const member = await teamService.findMember(teamId, session.user.id);
+  if (!member || !['OWNER', 'ADMIN'].includes(member.role)) {
+    return res.status(403).json({ message: 'Forbidden' });
+  }
+
+  const logs = await auditService.findByTeamAndAction(
+    teamId,
+    undefined,
+    startDate as string | undefined,
+    endDate as string | undefined
+  );
+
+  const csvStringifier = createObjectCsvStringifier({
+    header: [
+      { id: 'id', title: 'ID' },
+      { id: 'action', title: 'Action' },
+      { id: 'actorEmail', title: 'Actor Email' },
+      { id: 'actorName', title: 'Actor Name' },
+      { id: 'entityId', title: 'Entity ID' },
+      { id: 'entityType', title: 'Entity Type' },
+      { id: 'entityName', title: 'Entity Name' },
+      { id: 'metadata', title: 'Metadata' },
+      { id: 'createdAt', title: 'Created At' },
+    ],
+  });
+
+  const records = logs.map((log) => ({
+    id: log.id,
+    action: log.action,
+    actorEmail: log.actorEmail,
+    actorName: log.actorName || '',
+    entityId: log.entityId || '',
+    entityType: log.entityType,
+    entityName: log.entityName || '',
+    metadata: JSON.stringify(log.metadata),
+    createdAt: log.createdAt.toISOString(),
+  }));
+
+  const csv = csvStringifier.getHeaderString() + csvStringifier.stringifyRecords(records);
+
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename=audit-logs-${teamId}.csv`);
+  res.status(200).send(csv);
 }
