@@ -1,9 +1,9 @@
 import { useState } from 'react';
+import { WebhookFormProps, WebhookEvent } from '@/lib/types/webhook';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { WebhookFormProps, WebhookEvent } from '@/lib/types';
 
 interface Webhook {
   id?: string;

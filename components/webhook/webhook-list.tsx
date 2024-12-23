@@ -1,9 +1,9 @@
 import { useState } from 'react';
+import { Webhook, WebhookListProps } from '@/lib/types/webhook';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { WebhookForm } from './webhook-form';
 import { WebhookDeliveryList } from './webhook-delivery-list';
-import { Webhook, WebhookListProps } from '@/lib/types';
 
 export function WebhookList({ webhooks, onDelete, onUpdate }: WebhookListProps) {
   const [showForm, setShowForm] = useState(false);

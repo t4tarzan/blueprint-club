@@ -1,4 +1,4 @@
-import { jackson, JacksonOption } from '@boxyhq/saml-jackson';
+import { default as Jackson } from '@boxyhq/saml-jackson';
 import { prisma } from '@/lib/prisma';
 
 export interface SAMLConfig {
@@ -22,73 +22,70 @@ export interface SAMLConnection {
 }
 
 export class SAMLService {
-  private jacksonClient: any;
+  private static instance: any;
 
-  constructor() {
-    this.initJackson();
+  static async getInstance() {
+    if (!this.instance) {
+      this.instance = await Jackson({
+        externalUrl: process.env.NEXTAUTH_URL,
+        samlAudience: process.env.NEXTAUTH_URL,
+        samlPath: '/api/auth/saml',
+        db: {
+          engine: 'prisma',
+          prisma,
+        },
+      });
+    }
+    return this.instance;
   }
 
-  private async initJackson() {
-    const options: JacksonOption = {
-      externalUrl: process.env.NEXTAUTH_URL || 'http://localhost:3000',
-      db: {
-        engine: 'sql',
-        type: 'postgres',
-        url: process.env.DATABASE_URL!,
-      },
-      saml: {
-        callback: '/api/auth/saml/callback',
-      },
-    };
-
-    this.jacksonClient = await jackson(options);
+  static async getMetadata() {
+    const instance = await this.getInstance();
+    return instance.getMetadata();
   }
 
-  async createConnection(config: SAMLConfig) {
-    const connection = await this.jacksonClient.connectionAPIController.createSAMLConnection({
-      encodedRawMetadata: config.encodedRawMetadata,
-      metadataUrl: config.metadataUrl,
-      defaultRedirectUrl: config.defaultRedirectUrl,
-      redirectUrl: config.redirectUrl,
-      tenant: config.tenant,
-      product: config.product,
+  static async createConnection(data: SAMLConfig) {
+    const instance = await this.getInstance();
+    return instance.createConnection({
+      encodedRawMetadata: data.encodedRawMetadata,
+      metadataUrl: data.metadataUrl,
+      defaultRedirectUrl: data.defaultRedirectUrl,
+      redirectUrl: data.redirectUrl,
+      tenant: data.tenant,
+      product: data.product,
     });
-
-    return connection;
   }
 
-  async getConnection(tenant: string, product: string) {
-    const connection = await this.jacksonClient.connectionAPIController.getSAMLConnection({
-      tenant,
-      product,
-    });
-
-    return connection;
-  }
-
-  async deleteConnection(tenant: string, product: string) {
-    await this.jacksonClient.connectionAPIController.deleteSAMLConnection({
+  static async deleteConnection(tenant: string, product: string) {
+    const instance = await this.getInstance();
+    return instance.deleteConnection({
       tenant,
       product,
     });
   }
 
-  async getMetadata(tenant: string, product: string) {
-    const metadata = await this.jacksonClient.connectionAPIController.getMetadata({
+  static async getConnection(tenant: string, product: string) {
+    const instance = await this.getInstance();
+    return instance.getConnection({
       tenant,
       product,
     });
-
-    return metadata;
   }
 
-  async validateSAMLResponse(payload: any) {
-    const response = await this.jacksonClient.authAPIController.validateSAMLResponse(payload);
+  static async getConnections() {
+    const instance = await this.getInstance();
+    return instance.getConnections();
+  }
+
+  static async validateSAMLResponse(payload: any) {
+    const instance = await this.getInstance();
+    const response = await instance.validateSAMLResponse(payload);
     return response;
   }
 
-  async getAuthorizationUrl(tenant: string, product: string, redirectUrl?: string) {
-    const url = await this.jacksonClient.authAPIController.getAuthorizationUrl({
+  static async getAuthorizationUrl(tenant: string, product: string, redirectUrl?: string) {
+    const instance = await this.getInstance();
+    const url = await instance.getAuthorizationUrl({
       tenant,
       product,
       redirectUrl,
@@ -97,16 +94,18 @@ export class SAMLService {
     return url;
   }
 
-  async getOAuthToken(code: string) {
-    const token = await this.jacksonClient.authAPIController.getOAuthToken({
+  static async getOAuthToken(code: string) {
+    const instance = await this.getInstance();
+    const token = await instance.getOAuthToken({
       code,
     });
 
     return token;
   }
 
-  async getUserInfo(token: string) {
-    const userInfo = await this.jacksonClient.authAPIController.userInfo({
+  static async getUserInfo(token: string) {
+    const instance = await this.getInstance();
+    const userInfo = await instance.userInfo({
       token,
     });
 

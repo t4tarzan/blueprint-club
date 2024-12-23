@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { WebhookDelivery } from '@/lib/types';
+import { WebhookDelivery } from '@/lib/types/webhook';
 
 interface WebhookDeliveryListProps {
   webhookId: string;

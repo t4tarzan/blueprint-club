@@ -1,42 +1,3 @@
-import { Role, Team, TeamMember, User, Invitation } from './prisma';
-
-export interface BoxyHQSAMLProfile {
-  id: string;
-  email: string;
-  name: string;
-  provider: string;
-}
-
-export interface BoxyHQSAMLConfig {
-  clientID: string;
-  clientSecret: string;
-  issuer: string;
-  callback: string;
-}
-
-export interface SAMLResponse {
-  success: boolean;
-  error?: string;
-  data?: any;
-}
-
-export interface SCIMUser {
-  id: string;
-  userName: string;
-  name: {
-    givenName: string;
-    familyName: string;
-  };
-  emails: Array<{ value: string; type: string; primary: boolean }>;
-  active: boolean;
-}
-
-export interface SCIMGroup {
-  id: string;
-  displayName: string;
-  members: Array<{ value: string }>;
-}
-
 export interface WebhookEvent {
   id: string;
   name: string;
@@ -86,5 +47,3 @@ export type AuditLogAction =
   | 'user.create'
   | 'user.update'
   | 'user.delete';
-
-export { Role, Team, TeamMember, User, Invitation };

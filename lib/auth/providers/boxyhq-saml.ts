@@ -1,53 +1,42 @@
-import { OAuthConfig, OAuthUserConfig } from 'next-auth/providers';
+import { OAuthConfig } from 'next-auth/providers';
+import { BoxyHQSAMLProfile, BoxyHQSAMLConfig } from '@/lib/types/boxyhq';
+import { User } from '@/lib/types/prisma';
 
-export interface BoxyHQSAMLProfile {
-  id: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  name?: string;
-  tenant?: string;
-  product?: string;
+export interface BoxyHQSAMLProvider extends OAuthConfig<BoxyHQSAMLProfile> {
+  issuer: string;
+  clientID: string;
+  clientSecret: string;
+  callback: string;
 }
 
-export interface BoxyHQSAMLConfig extends OAuthUserConfig<BoxyHQSAMLProfile> {
-  tenant: string;
-  product: string;
-}
-
-export default function BoxyHQSAMLProvider(
-  config: Partial<BoxyHQSAMLConfig> = {}
-): OAuthConfig<BoxyHQSAMLProfile> {
+export default function BoxyHQSAMLProvider(config: BoxyHQSAMLConfig): BoxyHQSAMLProvider {
   return {
     id: 'boxyhq-saml',
     name: 'BoxyHQ SAML',
     type: 'oauth',
-    wellKnown: `${process.env.NEXTAUTH_URL}/api/auth/saml/metadata`,
+    version: '2.0',
+    issuer: config.issuer,
+    clientId: config.clientID,
+    clientSecret: config.clientSecret,
+    callback: config.callback,
     authorization: {
-      url: `${process.env.NEXTAUTH_URL}/api/auth/saml/authorize`,
+      url: `${config.issuer}/api/oauth/authorize`,
       params: {
-        tenant: config.tenant,
-        product: config.product,
+        scope: '',
+        response_type: 'code',
+        provider: 'saml',
       },
     },
-    token: `${process.env.NEXTAUTH_URL}/api/auth/saml/token`,
-    userinfo: `${process.env.NEXTAUTH_URL}/api/auth/saml/userinfo`,
-    profile(profile: BoxyHQSAMLProfile) {
+    token: `${config.issuer}/api/oauth/token`,
+    userinfo: `${config.issuer}/api/oauth/userinfo`,
+    profile(profile: BoxyHQSAMLProfile): User {
       return {
         id: profile.id,
         email: profile.email,
-        name: profile.name || `${profile.firstName} ${profile.lastName}`.trim(),
+        name: profile.name,
         image: null,
+        emailVerified: new Date(),
       };
     },
-    style: {
-      logo: '/boxyhq-logo.png',
-      logoDark: '/boxyhq-logo-dark.png',
-      bg: '#fff',
-      text: '#000',
-      bgDark: '#000',
-      textDark: '#fff',
-    },
-    options: config,
   };
 }
