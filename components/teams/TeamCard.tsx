@@ -1,10 +1,14 @@
-import { Team, TeamMember } from '@prisma/client';
-import { useSession } from 'next-auth/react';
+import { Team } from '../../types';
+import { UserGroupIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 
 interface TeamCardProps {
   team: Team & {
-    members?: TeamMember[];
+    members?: {
+      userId: string;
+      role: string;
+    }[];
   };
   isCurrentTeam?: boolean;
   onSwitchTeam?: (teamId: string) => void;
