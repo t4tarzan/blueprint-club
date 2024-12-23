@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Team, TeamMember, User } from '@prisma/client';
 import { useSession } from 'next-auth/react';
+import { Team, User, TeamMember } from '../../types';
+import { useTranslation } from 'next-i18next';
 import { TeamMembers } from './TeamMembers';
 import { SAMLConfig } from './SAMLConfig';
 

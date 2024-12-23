@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { GetServerSideProps } from 'next';
 import { getSession } from 'next-auth/react';
-import { Team, TeamMember } from '@prisma/client';
+import Link from 'next/link';
+import { Team, TeamMember } from '../../types';
 import { prisma } from '../../lib/prisma';
 import { TeamCard } from '../../components/teams/TeamCard';
 import { CreateTeamForm } from '../../components/teams/CreateTeamForm';

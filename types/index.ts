@@ -9,7 +9,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'ADMIN' | 'OWNER' | 'MEMBER';
+  role: Role;
   teams?: Team[];
 }
 
@@ -26,7 +26,7 @@ export interface TeamMember {
   id: string;
   userId: string;
   teamId: string;
-  role: string;
+  role: Role;
   user: User;
   team: Team;
 }
@@ -68,3 +68,5 @@ export interface ApiErrorResponse {
   message?: string;
   status?: number;
 }
+
+export type Role = 'ADMIN' | 'OWNER' | 'MEMBER';

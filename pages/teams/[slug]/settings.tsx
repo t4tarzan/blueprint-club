@@ -1,6 +1,6 @@
 import { GetServerSideProps } from 'next';
 import { getSession } from 'next-auth/react';
-import { Team, TeamMember, User } from '@prisma/client';
+import { Team, User, TeamMember } from '../../../types';
 import { prisma } from '../../../lib/prisma';
 import { TeamSettings } from '../../../components/teams/TeamSettings';
 
