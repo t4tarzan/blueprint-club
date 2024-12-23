@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'next-i18next';
-import { Button } from '../ui/Button';
-import { Badge } from '../ui/Badge';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 
 interface WebhookDelivery {

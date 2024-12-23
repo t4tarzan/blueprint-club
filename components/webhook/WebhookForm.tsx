@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useTranslation } from 'next-i18next';
 import { useRouter } from 'next/router';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
-import { Toggle } from '../ui/Toggle';
-import { Select } from '../ui/Select';
-import { WebhookEvents } from '../../lib/webhook/webhook-events';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Toggle } from '@/components/ui/toggle';
+import { Select } from '@/components/ui/select';
+import { WebhookEvents } from '@/lib/webhook/webhook-events';
 import { toast } from 'react-hot-toast';
 
 interface WebhookFormProps {

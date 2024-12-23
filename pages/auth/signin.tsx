@@ -4,8 +4,10 @@ import { useRouter } from 'next/router';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import Link from 'next/link';
-import { ErrorMessage } from '@/components/ui/ErrorMessage';
-import { SuccessMessage } from '@/components/ui/SuccessMessage';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ErrorMessage } from '@/components/ui/error-message';
+import { SuccessMessage } from '@/components/ui/success-message';
 
 const SignInSchema = Yup.object().shape({
   email: Yup.string()
@@ -97,7 +99,7 @@ export default function SignIn() {
                 Email address
               </label>
               <div className="mt-1">
-                <input
+                <Input
                   id="email"
                   name="email"
                   type="email"
@@ -119,7 +121,7 @@ export default function SignIn() {
                 Password
               </label>
               <div className="mt-1">
-                <input
+                <Input
                   id="password"
                   name="password"
                   type="password"
@@ -145,13 +147,13 @@ export default function SignIn() {
             </div>
 
             <div>
-              <button
+              <Button
                 type="submit"
                 disabled={isLoading}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
               >
                 {isLoading ? 'Signing in...' : 'Sign in'}
-              </button>
+              </Button>
             </div>
           </form>
 
@@ -166,7 +168,7 @@ export default function SignIn() {
             </div>
 
             <div className="mt-6">
-              <button
+              <Button
                 onClick={handleGoogleSignIn}
                 disabled={isLoading}
                 className="w-full flex justify-center items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
@@ -178,7 +180,7 @@ export default function SignIn() {
                   />
                 </svg>
                 Sign in with Google
-              </button>
+              </Button>
             </div>
           </div>
 
