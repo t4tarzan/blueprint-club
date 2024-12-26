@@ -1,12 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { motion, useAnimation } from 'framer-motion';
+import React from 'react';
+import { MathRenderer } from './MathRenderer';
 
 interface HandwrittenTextProps {
   text: string;
   className?: string;
-  speed?: number; // milliseconds per character
-  delay?: number;
-  onComplete?: () => void;
   color?: string;
   isStep?: boolean;
 }
@@ -14,64 +11,60 @@ interface HandwrittenTextProps {
 export const HandwrittenText: React.FC<HandwrittenTextProps> = ({
   text,
   className = '',
-  speed = 50,
-  delay = 0,
-  onComplete,
   color = 'text-gray-800',
   isStep = false,
 }) => {
-  const controls = useAnimation();
-  const [displayText, setDisplayText] = useState('');
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const stepPrefix = isStep ? '• ' : '';
+  
+  const cleanText = (text: string): string => {
+    // Remove markdown code blocks
+    let cleaned = text.replace(/```[^`]*```/g, '');
+    
+    // Remove bullet points, asterisks, and hashes
+    cleaned = cleaned.replace(/^[•*#\s]+/gm, '');
+    
+    // Replace "square" with "²" and properly format exponents
+    cleaned = cleaned.replace(/\b(\w+)\s+square\b/gi, '$1²');
+    
+    // Clean up extra whitespace
+    cleaned = cleaned.replace(/\s+/g, ' ').trim();
+    
+    // Format equations with proper spacing
+    cleaned = cleaned.replace(/([+\-=])/g, ' $1 ').trim();
+    
+    return cleaned;
+  };
 
-  useEffect(() => {
-    let currentText = '';
-    let currentIndex = 0;
-
-    const writeText = () => {
-      if (currentIndex < text.length) {
-        currentText += text[currentIndex];
-        setDisplayText(currentText);
-        currentIndex++;
-        timeoutRef.current = setTimeout(writeText, speed);
-      } else {
-        onComplete?.();
+  // Function to parse text and identify math expressions
+  const renderContent = () => {
+    const parts = cleanText(text).split(/(\$.*?\$)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith('$') && part.endsWith('$')) {
+        // Remove the $ symbols and render as math
+        const mathContent = part.slice(1, -1);
+        return (
+          <MathRenderer
+            key={index}
+            math={mathContent}
+            inline={true}
+            className="mx-1"
+          />
+        );
       }
-    };
-
-    timeoutRef.current = setTimeout(() => {
-      controls.start({ opacity: 1 });
-      writeText();
-    }, delay);
-
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, [text, speed, delay, controls, onComplete]);
-
-  // Split text into lines for better animation
-  const lines = displayText.split('\n');
+      return <span key={index}>{part}</span>;
+    });
+  };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={controls}
-      className={`font-kalam ${className} ${color} ${
-        isStep ? 'border-l-4 border-blue-400 pl-4' : ''
-      }`}
+    <div 
+      className={`${className} ${color}`}
+      style={{
+        fontFamily: 'Kalam, cursive',
+        letterSpacing: '0.5px',
+        lineHeight: '1.4'
+      }}
     >
-      {lines.map((line, index) => (
-        <div
-          key={index}
-          className={`leading-relaxed ${line.trim().startsWith('Step') ? 'text-blue-600 font-semibold' : ''} ${
-            line.trim().startsWith('Final') ? 'text-green-600 font-semibold' : ''
-          }`}
-        >
-          {line || '\u00A0'}
-        </div>
-      ))}
-    </motion.div>
+      {stepPrefix}{renderContent()}
+    </div>
   );
 };

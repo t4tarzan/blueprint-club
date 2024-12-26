@@ -15,5 +15,9 @@
 .env.test
 .env.production
 
+# Google Cloud credentials
+voice_chatbot/chatbt-*.json
+voice_chatbot/google_credentials.json
+
 # vercel
 .vercel

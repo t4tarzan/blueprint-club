@@ -1,71 +1,73 @@
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import dynamic from 'next/dynamic';
+import React, { useMemo } from 'react';
 import { HandwrittenText } from './HandwrittenText';
-import type { TeachingStyle } from './TeachingStyle';
-
-// Import GraphDisplay component dynamically to avoid SSR issues
-const GraphDisplay = dynamic(() => import('./GraphDisplay'), { ssr: false });
+import { TeachingStyle } from '@/types/aitutor';
+import '@/styles/notebook.css';
 
 interface NotebookWhiteboardProps {
   content: string;
-  isProcessing: boolean;
-  selectedSubject: 'math' | 'science' | null;
-  graphData?: any;
   teachingStyle: TeachingStyle;
+  isProcessing?: boolean;
 }
+
+const lineColors = {
+  0: 'text-blue-600',
+  1: 'text-purple-600',
+  2: 'text-green-600',
+  3: 'text-red-600',
+} as const;
 
 export const NotebookWhiteboard: React.FC<NotebookWhiteboardProps> = ({
   content,
-  isProcessing,
-  selectedSubject,
-  graphData,
-  teachingStyle
+  teachingStyle,
+  isProcessing = false,
 }) => {
-  const [lines, setLines] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (content) {
-      const newLines = content.split('\n').filter(line => line.trim());
-      setLines(newLines);
+  const lines = useMemo(() => {
+    if (Array.isArray(content)) {
+      return content;
     }
+    return content
+      .split('\n')
+      .filter(line => line.trim())
+      .map(line => line.replace(/^[•*#\s]+/, '').trim()); // Remove leading symbols
   }, [content]);
 
-  const getWritingSpeed = () => {
-    switch (teachingStyle) {
-      case 'quick-response':
-        return 20;
-      case 'step-by-step':
-        return 40;
-      case 'interactive':
-        return 30;
-      default:
-        return 30;
-    }
+  const getLineColor = (index: number): string => {
+    const colorIndex = index % Object.keys(lineColors).length;
+    return lineColors[colorIndex as keyof typeof lineColors];
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 h-full overflow-y-auto">
-      <div className="relative min-h-full">
-        {/* Graph Area */}
-        {graphData && Object.keys(graphData).length > 0 && (
-          <div className="mb-6">
-            <GraphDisplay graphData={graphData} />
-          </div>
-        )}
+    <div 
+      className="relative w-full h-full overflow-hidden"
+      style={{
+        backgroundImage: 'linear-gradient(#f0f0f0 1px, transparent 1px)',
+        backgroundSize: '100% 2rem',
+        backgroundPosition: '0 0',
+        backgroundColor: 'white',
+      }}
+    >
+      {/* Left margin line */}
+      <div 
+        className="absolute left-12 top-0 bottom-0 w-0.5 bg-red-200"
+        style={{ zIndex: 1 }}
+      />
 
-        {/* Content Area */}
-        <div className="whitespace-pre-wrap font-notebook text-lg leading-relaxed">
-          {isProcessing ? (
-            <div className="flex items-center justify-center py-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-            </div>
-          ) : (
+      {/* Content Area with custom scrollbar */}
+      <div className="w-full h-full px-16 py-4 overflow-y-auto custom-scrollbar">
+        <div className="space-y-2"> {/* Reduced spacing between lines */}
+          {lines.map((line, index) => (
             <HandwrittenText
-              text={lines.join('\n')}
-              speed={getWritingSpeed()}
-              className="space-y-2"
+              key={index}
+              text={line}
+              color={getLineColor(index)}
+              isStep={teachingStyle === 'step-by-step'}
+              className="leading-relaxed" // Adjusted line height
             />
+          ))}
+          {isProcessing && (
+            <div className="animate-pulse flex space-x-4">
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+            </div>
           )}
         </div>
       </div>
