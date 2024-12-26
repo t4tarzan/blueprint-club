@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Math Tutor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #1a73e8;
+            margin-bottom: 20px;
+        }
+
+        .chat-area {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            margin: 10px 0;
+            padding: 10px 15px;
+            border-radius: 15px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .user-message {
+            background-color: #e3f2fd;
+            margin-left: auto;
+            border-radius: 15px 15px 0 15px;
+        }
+
+        .bot-message {
+            background-color: #f5f5f5;
+            margin-right: auto;
+            border-radius: 15px 15px 15px 0;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .microphone-button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #4CAF50;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .microphone-button:hover {
+            transform: scale(1.1);
+        }
+
+        .microphone-button.listening {
+            background-color: #ff4444;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .microphone-icon {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+
+        #voiceStatus {
+            text-align: center;
+            color: #666;
+            min-height: 20px;
+            margin-top: 10px;
+        }
+
+        .wave-visualizer {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            gap: 3px;
+            height: 20px;
+            margin-top: 10px;
+        }
+
+        .wave-bar {
+            width: 3px;
+            background-color: #1a73e8;
+            border-radius: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Math Tutor</h1>
+        <div class="chat-area" id="conversation">
+            <div class="message bot-message">
+                Hi! I'm your math tutor. Click the microphone and start asking questions!
+            </div>
+        </div>
+        <div class="controls">
+            <button class="microphone-button" onclick="toggleListening()" id="micButton">
+                <svg class="microphone-icon" viewBox="0 0 24 24">
+                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1 1.93c-3.94-.49-7-3.85-7-7.93h2c0 3.31 2.69 6 6 6s6-2.69 6-6h2c0 4.08-3.06 7.44-7 7.93V19h4v2H8v-2h4v-3.07z"/>
+                </svg>
+            </button>
+        </div>
+        <div id="voiceStatus"></div>
+        <div class="wave-visualizer" id="waveVisualizer">
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+            <div class="wave-bar"></div>
+        </div>
+    </div>
+
+    <script>
+        let recognition;
+        let isListening = false;
+        const voiceStatus = document.getElementById('voiceStatus');
+        const micButton = document.getElementById('micButton');
+        const waveVisualizer = document.getElementById('waveVisualizer');
+        let audioContext;
+        let audioQueue = [];
+        let isPlaying = false;
+
+        // WebSocket setup for Eleven Labs
+        class ElevenLabsStream {
+            constructor(apiKey) {
+                this.apiKey = apiKey;
+                this.socket = null;
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                this.audioQueue = [];
+                this.isPlaying = false;
+            }
+
+            async connect(text, voiceId = '21m00Tcm4TlvDq8ikWAM') {
+                if (this.socket) {
+                    this.socket.close();
+                }
+
+                const BOS_MESSAGE = {
+                    text: text,
+                    voice_settings: {
+                        stability: 0.71,
+                        similarity_boost: 0.5,
+                        style: 0,
+                        use_speaker_boost: true
+                    },
+                    model_id: "eleven_monolingual_v1"
+                };
+
+                try {
+                    this.socket = new WebSocket(`wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input?model_id=eleven_monolingual_v1`);
+                    
+                    this.socket.onopen = () => {
+                        console.log('WebSocket connected');
+                        this.socket.send(JSON.stringify(BOS_MESSAGE));
+                    };
+
+                    this.socket.onmessage = async (event) => {
+                        if (event.data instanceof Blob) {
+                            try {
+                                const arrayBuffer = await event.data.arrayBuffer();
+                                const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+                                this.audioQueue.push(audioBuffer);
+                                if (!this.isPlaying) {
+                                    this.playNextInQueue();
+                                }
+                            } catch (error) {
+                                console.error('Error processing audio chunk:', error);
+                            }
+                        }
+                    };
+
+                    this.socket.onerror = (error) => {
+                        console.error('WebSocket error:', error);
+                        voiceStatus.textContent = 'Error with voice streaming';
+                    };
+
+                    this.socket.onclose = () => {
+                        console.log('WebSocket closed');
+                        if (this.audioQueue.length === 0) {
+                            voiceStatus.textContent = '';
+                        }
+                    };
+                } catch (error) {
+                    console.error('Error setting up WebSocket:', error);
+                    voiceStatus.textContent = 'Failed to setup voice streaming';
+                }
+            }
+
+            async playNextInQueue() {
+                if (this.audioQueue.length === 0) {
+                    this.isPlaying = false;
+                    if (!this.socket || this.socket.readyState === WebSocket.CLOSED) {
+                        voiceStatus.textContent = '';
+                    }
+                    return;
+                }
+
+                this.isPlaying = true;
+                const audioBuffer = this.audioQueue.shift();
+                const source = this.audioContext.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(this.audioContext.destination);
+                
+                source.onended = () => {
+                    this.playNextInQueue();
+                };
+
+                source.start(0);
+                voiceStatus.textContent = 'Speaking...';
+            }
+
+            disconnect() {
+                if (this.socket) {
+                    this.socket.close();
+                }
+                this.audioQueue = [];
+                this.isPlaying = false;
+            }
+        }
+
+        let elevenLabsStream;
+
+        async function setupAudioContext() {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        async function setupSpeechRecognition() {
+            if (!('webkitSpeechRecognition' in window)) {
+                alert('Speech recognition is not supported in this browser. Please use Chrome.');
+                return;
+            }
+
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+
+            recognition.onstart = () => {
+                isListening = true;
+                voiceStatus.textContent = 'Listening...';
+                updateMicrophoneButton();
+                waveVisualizer.style.display = 'flex';
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                voiceStatus.textContent = '';
+                updateMicrophoneButton();
+                waveVisualizer.style.display = 'none';
+            };
+
+            recognition.onresult = async (event) => {
+                const result = event.results[event.results.length - 1];
+                const text = result[0].transcript;
+                
+                if (result.isFinal) {
+                    addMessage(text, true);
+                    
+                    try {
+                        const response = await fetch('/process_audio', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ text: text }),
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.response) {
+                                addMessage(data.response);
+                                voiceStatus.textContent = 'Generating voice response...';
+                                
+                                // Use WebSocket streaming for voice response
+                                if (!elevenLabsStream) {
+                                    elevenLabsStream = new ElevenLabsStream('{{ api_key }}');
+                                }
+                                await elevenLabsStream.connect(data.response);
+                            }
+                        } else {
+                            console.error('Error processing audio:', await response.text());
+                            addMessage('Sorry, I had trouble processing that request.', false);
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        addMessage('Sorry, something went wrong. Please try again.', false);
+                    }
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                voiceStatus.textContent = 'Error with speech recognition';
+                isListening = false;
+                updateMicrophoneButton();
+                waveVisualizer.style.display = 'none';
+            };
+        }
+
+        function addMessage(text, isUser = false) {
+            const conversation = document.getElementById('conversation');
+            conversation.innerHTML += `<div class="message ${isUser ? 'user-message' : 'bot-message'}">${text}</div>`;
+            conversation.scrollTop = conversation.scrollHeight;
+        }
+
+        function updateMicrophoneButton() {
+            if (micButton) {
+                micButton.style.backgroundColor = isListening ? '#ff4444' : '#4CAF50';
+                micButton.classList.toggle('listening', isListening);
+            }
+        }
+
+        async function toggleListening() {
+            if (!recognition) {
+                await setupSpeechRecognition();
+            }
+
+            if (isListening) {
+                recognition.stop();
+            } else {
+                try {
+                    await setupAudioContext();
+                    recognition.start();
+                } catch (error) {
+                    console.error('Error starting recognition:', error);
+                    voiceStatus.textContent = 'Error starting voice recognition';
+                }
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            await setupSpeechRecognition();
+            
+            // Add keyboard shortcut (spacebar)
+            document.addEventListener('keydown', (event) => {
+                if (event.code === 'Space' && event.target === document.body) {
+                    event.preventDefault();
+                    toggleListening();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+@font-face {
+  font-family: 'Chalk';
+  src: url('/fonts/chalk.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+.whiteboard-theme {
+  --chalk-color: #2d3748;
+  --chalk-shadow: rgba(0, 0, 0, 0.1);
+  --chalk-highlight: rgba(255, 255, 255, 0.1);
+}
+
+.font-chalk {
+  font-family: 'Chalk', sans-serif;
+  text-shadow: 1px 1px var(--chalk-shadow);
+  position: relative;
+}
+
+.font-chalk::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--chalk-highlight);
+  opacity: 0.05;
+  pointer-events: none;
+}
+
+/* Math notation styles */
+.katex {
+  font-size: 1.1em;
+}
+
+.katex-display {
+  margin: 1.5em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}

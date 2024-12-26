@@ -34,6 +34,10 @@ class MyDocument extends Document {
               }
             }}
           />
+          <link
+            href="https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&display=swap"
+            rel="stylesheet"
+          />
           
           {/* Preload critical assets */}
           <link

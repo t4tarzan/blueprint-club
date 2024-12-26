@@ -1,7 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { QueryClient } from '@tanstack/query-core';
-import { QueryClientProvider } from '@tanstack/react-query/build/legacy/QueryClientProvider';
+import { render as rtlRender } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Session } from 'next-auth';
 import { Team, User, TeamMember, Role } from '@prisma/client';
 
@@ -33,19 +32,21 @@ const queryClient = new QueryClient({
   },
 });
 
-type WrapperProps = {
+interface WrapperProps {
   children: React.ReactNode;
   session?: Session | null;
-};
+}
 
-export function Wrapper({ children, session = null }: WrapperProps) {
+function Wrapper({ children, session = null }: WrapperProps) {
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>
   );
 }
 
-export function renderWithProviders(ui: React.ReactNode, { session, ...renderOptions }: { session?: Session | null } = {}) {
-  return render(ui, { wrapper: (props) => <Wrapper {...props} session={session} />, ...renderOptions });
+export function render(ui: React.ReactElement, { session = null, ...renderOptions } = {}) {
+  return rtlRender(ui, { wrapper: (props) => <Wrapper {...props} session={session} />, ...renderOptions });
 }
 
 const now = new Date().toISOString();
@@ -107,4 +108,8 @@ export const mockSession: Session = {
   expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
 };
 
-export { screen, fireEvent, waitFor };
+export function renderWithProviders(ui: React.ReactElement) {
+  return render(ui, {});
+}
+
+export * from '@testing-library/react';

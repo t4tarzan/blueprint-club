@@ -21,7 +21,8 @@ const Layout = ({ children, meta }: LayoutProps) => {
   const router = useRouter();
   const isDashboardPage = router.pathname.startsWith('/dashboard');
   const isSocialPage = router.pathname.startsWith('/social');
-  const showNavbar = !isDashboardPage && !isSocialPage;
+  const isAITutorPage = router.pathname.startsWith('/aitutor');
+  const showNavbar = !isDashboardPage && !isSocialPage && !isAITutorPage;
 
   return (
     <div className="min-h-screen flex flex-col">

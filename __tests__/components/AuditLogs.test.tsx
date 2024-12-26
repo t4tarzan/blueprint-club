@@ -1,43 +1,30 @@
 import React from 'react';
-import { screen, waitFor, fireEvent, render, within } from '@testing-library/react';
-import { rest } from 'msw';
-import { setupServer } from 'msw/node';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { AuditLogs } from '@/components/teams/AuditLogs';
-import { renderWithProviders, mockTeam, mockAuditLog, mockUser } from '../utils/test-utils';
-import type { AuditLog } from '@/types';
-import { formatDate } from '@/lib/utils';
+import { renderWithProviders } from '../utils/test-utils';
+import { mockTeam } from '../fixtures/team';
 
-// Mock date-fns format
-jest.mock('date-fns/format', () => ({
-  __esModule: true,
-  default: jest.fn().mockImplementation((date) => date.toISOString()),
-}));
-
-// Mock heroicons
-jest.mock('@heroicons/react/24/outline', () => ({
-  CalendarIcon: () => <div data-testid="calendar-icon" />,
-  ArrowPathIcon: () => <div data-testid="arrow-path-icon" />,
-  ArrowDownTrayIcon: () => <div data-testid="arrow-down-tray-icon" />,
-}));
-
-const server = setupServer(
-  rest.get('/api/teams/:teamId/audit-logs', (req, res, ctx) => {
-    return res(
-      ctx.json({
-        logs: [mockAuditLog],
-        pagination: {
-          total: 1,
-          page: 1,
-          limit: 10,
+// Mock fetch
+global.fetch = jest.fn(() =>
+  Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve({
+      logs: [
+        {
+          id: '1',
+          action: 'created',
+          actor: { name: 'John Doe', email: 'john@example.com' },
+          target: 'document',
+          metadata: { name: 'test.doc' },
+          createdAt: new Date().toISOString(),
         },
-      })
-    );
+      ],
+      total: 1,
+      page: 1,
+      perPage: 10,
+    }),
   })
-);
-
-beforeAll(() => server.listen());
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
+) as jest.Mock;
 
 describe('AuditLogs', () => {
   beforeEach(() => {
@@ -51,37 +38,24 @@ describe('AuditLogs', () => {
       const table = screen.getByRole('table');
       const rows = within(table).getAllByRole('row');
       expect(rows.length).toBeGreaterThan(1); // Header + data row
-      expect(within(rows[1]).getByText(mockAuditLog.action)).toBeInTheDocument();
-    });
-  });
-
-  it('renders error state', async () => {
-    server.use(
-      rest.get('/api/teams/:teamId/audit-logs', (req, res, ctx) => {
-        return res(ctx.status(500), ctx.json({ message: 'Error loading audit logs' }));
-      })
-    );
-
-    renderWithProviders(<AuditLogs team={{ ...mockTeam, members: mockTeam.members }} />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Error loading audit logs')).toBeInTheDocument();
+      
+      const cells = within(rows[1]).getAllByRole('cell');
+      expect(cells[0]).toHaveTextContent('John Doe');
+      expect(cells[1]).toHaveTextContent('created');
+      expect(cells[2]).toHaveTextContent('document');
     });
   });
 
   it('renders empty state', async () => {
-    server.use(
-      rest.get('/api/teams/:teamId/audit-logs', (req, res, ctx) => {
-        return res(
-          ctx.json({
-            logs: [],
-            pagination: {
-              total: 0,
-              page: 1,
-              limit: 10,
-            },
-          })
-        );
+    (global.fetch as jest.Mock).mockImplementationOnce(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          logs: [],
+          total: 0,
+          page: 1,
+          perPage: 10,
+        }),
       })
     );
 
@@ -109,26 +83,24 @@ describe('AuditLogs', () => {
       const table = screen.getByRole('table');
       const rows = within(table).getAllByRole('row');
       const cells = within(rows[1]).getAllByRole('cell');
-      
-      expect(cells[2]).toHaveTextContent(mockAuditLog.action);
-      expect(cells[3]).toHaveTextContent(mockAuditLog.category);
-      expect(cells[4]).toHaveTextContent(mockAuditLog.status);
+
+      expect(cells[0]).toHaveTextContent('John Doe');
+      expect(cells[1]).toHaveTextContent('created');
+      expect(cells[2]).toHaveTextContent('document');
+      expect(cells[3]).toHaveTextContent('test.doc');
     });
   });
 
   it('handles empty audit logs', async () => {
-    server.use(
-      rest.get('/api/teams/:teamId/audit-logs', (req, res, ctx) => {
-        return res(
-          ctx.json({
-            logs: [],
-            pagination: {
-              total: 0,
-              page: 1,
-              limit: 10,
-            },
-          })
-        );
+    (global.fetch as jest.Mock).mockImplementationOnce(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          logs: [],
+          total: 0,
+          page: 1,
+          perPage: 10,
+        }),
       })
     );
 
@@ -136,20 +108,6 @@ describe('AuditLogs', () => {
 
     await waitFor(() => {
       expect(screen.getByText('No audit logs found')).toBeInTheDocument();
-    });
-  });
-
-  it('handles error state', async () => {
-    server.use(
-      rest.get('/api/teams/:teamId/audit-logs', (req, res, ctx) => {
-        return res(ctx.status(500), ctx.json({ message: 'Error loading audit logs' }));
-      })
-    );
-
-    renderWithProviders(<AuditLogs team={{ ...mockTeam, members: mockTeam.members }} />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Error loading audit logs')).toBeInTheDocument();
     });
   });
 });

@@ -102,13 +102,14 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }): Promise<ExtendedSession> {
       return {
         ...session,
-        user: token.user as AuthUser,
+        user: token.user,
       };
     },
   },
   pages: {
-    signIn: '/auth/login',
-    error: '/auth/error',
+    signIn: '/',
+    error: '/?error=true',
+    signOut: '/?signout=true',
   },
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === 'development',

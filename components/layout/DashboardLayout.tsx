@@ -18,6 +18,7 @@ export function DashboardLayout({ children, currentPath }: DashboardLayoutProps)
   const navItems = [
     { path: '/dashboard', label: 'Dashboard' },
     { path: '/social', label: 'Social' },
+    { path: '/aitutor', label: 'AI Tutor' },
   ];
 
   return (

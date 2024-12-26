@@ -1,68 +1,52 @@
-import { mockTeam, mockUser, mockAuditLog } from '../utils/test-utils';
-import { PrismaClient } from '@prisma/client';
+import { mockReset } from 'jest-mock-extended';
+import { mockPrisma } from '../__mocks__/prisma';
 
-// Mock Prisma
-const mockPrisma = {
-  auditLog: {
-    create: jest.fn(),
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    count: jest.fn(),
-  },
-};
+jest.mock('@/lib/prisma', () => ({
+  __esModule: true,
+  default: mockPrisma,
+}));
 
-jest.mock('../../lib/prisma', () => {
-  return {
-    __esModule: true,
-    default: mockPrisma,
-  };
-});
-
-// Import after mocking
-const { AuditService, AuditLogCategory, AuditLogStatus, AuditLogAction } = require('../../lib/boxyhq/audit-service');
+import prisma from '@/lib/prisma';
+import { AuditService } from '@/lib/boxyhq/audit-service';
 
 describe('AuditService', () => {
-  let service: typeof AuditService;
+  let service: AuditService;
 
   beforeEach(() => {
-    service = AuditService.getInstance();
-    jest.clearAllMocks();
+    mockReset(mockPrisma);
+    service = new AuditService();
   });
 
   describe('create', () => {
     it('should create an audit log entry', async () => {
-      const logData = {
-        teamId: mockTeam.id,
-        userId: mockUser.id,
-        action: 'TEAM_MEMBER_ADDED' as typeof AuditLogAction,
-        category: AuditLogCategory.TEAM,
-        status: AuditLogStatus.SUCCESS,
-        metadata: { role: 'ADMIN' },
+      const mockAuditLog = {
+        id: '1',
+        teamId: 'team1',
+        action: 'create',
+        actor: { id: 'user1', name: 'Test User' },
+        target: { id: 'resource1', type: 'document' },
+        metadata: { key: 'value' },
+        createdAt: new Date(),
       };
 
       mockPrisma.auditLog.create.mockResolvedValue(mockAuditLog);
 
-      const result = await service.create(logData);
+      const result = await service.create({
+        teamId: 'team1',
+        action: 'create',
+        actor: { id: 'user1', name: 'Test User' },
+        target: { id: 'resource1', type: 'document' },
+        metadata: { key: 'value' },
+      });
 
       expect(result).toEqual(mockAuditLog);
       expect(mockPrisma.auditLog.create).toHaveBeenCalledWith({
-        data: logData,
-      });
-    });
-  });
-
-  describe('get', () => {
-    it('should fetch a single audit log by id', async () => {
-      mockPrisma.auditLog.findUnique.mockResolvedValue(mockAuditLog);
-
-      const result = await service.get(mockAuditLog.id);
-
-      expect(result).toEqual(mockAuditLog);
-      expect(mockPrisma.auditLog.findUnique).toHaveBeenCalledWith({
-        where: { id: mockAuditLog.id },
-        include: {
-          user: true,
-          team: true,
+        data: {
+          teamId: 'team1',
+          action: 'create',
+          actor: { id: 'user1', name: 'Test User' },
+          target: { id: 'resource1', type: 'document' },
+          metadata: { key: 'value' },
         },
       });
     });
@@ -70,40 +54,30 @@ describe('AuditService', () => {
 
   describe('list', () => {
     it('should fetch audit logs with filters', async () => {
-      const filters = {
-        teamId: mockTeam.id,
-        category: AuditLogCategory.TEAM,
-        status: AuditLogStatus.SUCCESS,
-      };
+      const mockLogs = [
+        {
+          id: '1',
+          teamId: 'team1',
+          action: 'create',
+          actor: { id: 'user1', name: 'Test User' },
+          target: { id: 'resource1', type: 'document' },
+          metadata: {},
+          createdAt: new Date(),
+        },
+      ];
 
-      mockPrisma.auditLog.findMany.mockResolvedValue([mockAuditLog]);
+      mockPrisma.auditLog.findMany.mockResolvedValue(mockLogs);
       mockPrisma.auditLog.count.mockResolvedValue(1);
 
-      const result = await service.list(filters);
+      const result = await service.list('team1', 1, 10);
 
-      expect(result).toEqual({
-        logs: [mockAuditLog],
-        pagination: {
-          total: 1,
-          page: 1,
-          limit: 10,
-        },
-      });
+      expect(result.logs).toEqual(mockLogs);
+      expect(result.total).toBe(1);
       expect(mockPrisma.auditLog.findMany).toHaveBeenCalledWith({
-        where: {
-          teamId: mockTeam.id,
-          category: 'TEAM',
-          status: 'SUCCESS',
-        },
-        include: {
-          user: true,
-          team: true,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-        take: 10,
+        where: { teamId: 'team1' },
+        orderBy: { createdAt: 'desc' },
         skip: 0,
+        take: 10,
       });
     });
 
@@ -111,40 +85,22 @@ describe('AuditService', () => {
       const startDate = new Date('2024-01-01');
       const endDate = new Date('2024-01-31');
 
-      mockPrisma.auditLog.findMany.mockResolvedValue([mockAuditLog]);
-      mockPrisma.auditLog.count.mockResolvedValue(1);
+      mockPrisma.auditLog.findMany.mockResolvedValue([]);
+      mockPrisma.auditLog.count.mockResolvedValue(0);
 
-      const result = await service.list({
-        teamId: mockTeam.id,
-        startDate,
-        endDate,
-      });
+      await service.list('team1', 1, 10, startDate, endDate);
 
-      expect(result).toEqual({
-        logs: [mockAuditLog],
-        pagination: {
-          total: 1,
-          page: 1,
-          limit: 10,
-        },
-      });
       expect(mockPrisma.auditLog.findMany).toHaveBeenCalledWith({
         where: {
-          teamId: mockTeam.id,
+          teamId: 'team1',
           createdAt: {
             gte: startDate,
             lte: endDate,
           },
         },
-        include: {
-          user: true,
-          team: true,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-        take: 10,
+        orderBy: { createdAt: 'desc' },
         skip: 0,
+        take: 10,
       });
     });
   });

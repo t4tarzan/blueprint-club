@@ -26,6 +26,11 @@ enum SubscriptionStatus {
   INCOMPLETE_EXPIRED
 }
 
+enum TutorSubject {
+  MATH
+  SCIENCE
+}
+
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -75,6 +80,7 @@ model User {
   auditLogs     AuditLog[]
   createdTeams  Team[]       @relation("TeamCreator")
   subscription  Subscription?
+  tutorSessions TutorSession[]
 }
 
 model VerificationToken {
@@ -287,4 +293,24 @@ model SubscriptionUsage {
 
   @@unique([subscriptionId, metric, feature])
   @@index([teamId, metric])
+}
+
+model TutorSession {
+  id            String         @id @default(cuid())
+  userId        String
+  questionsLeft Int           @default(20)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  questions     TutorQuestion[]
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TutorQuestion {
+  id         String       @id @default(cuid())
+  sessionId  String
+  question   String
+  solution   String
+  subject    TutorSubject
+  createdAt  DateTime    @default(now())
+  session    TutorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }

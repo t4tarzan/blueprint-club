@@ -16,6 +16,9 @@ module.exports = {
       },
     },
     extend: {
+      fontFamily: {
+        kalam: ['Kalam', 'cursive'],
+      },
       colors: {
         'chalk': {
           DEFAULT: '#E0E0E0',

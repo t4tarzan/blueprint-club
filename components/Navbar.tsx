@@ -56,6 +56,19 @@ const Navbar = () => {
             <Link href="/" className={`nav-link ${isActive('/')} text-white hover:text-[#FFC107]`}>
               Home
             </Link>
+            {session && (
+              <>
+                <Link href="/dashboard" className={`nav-link ${isActive('/dashboard')} text-white hover:text-[#FFC107]`}>
+                  Dashboard
+                </Link>
+                <Link href="/social" className={`nav-link ${isActive('/social')} text-white hover:text-[#FFC107]`}>
+                  Social
+                </Link>
+                <Link href="/aitutor" className={`nav-link ${isActive('/aitutor')} text-white hover:text-[#FFC107]`}>
+                  AI Tutor
+                </Link>
+              </>
+            )}
             <Link 
               href="/#programs" 
               className={`nav-link ${isActive('/#programs')} text-white hover:text-[#FFC107]`}
@@ -165,6 +178,28 @@ const Navbar = () => {
                 >
                   Home
                 </Link>
+                {session && (
+                  <>
+                    <Link
+                      href="/dashboard"
+                      className="block px-3 py-2 text-white hover:text-[#FFC107]"
+                    >
+                      Dashboard
+                    </Link>
+                    <Link
+                      href="/social"
+                      className="block px-3 py-2 text-white hover:text-[#FFC107]"
+                    >
+                      Social
+                    </Link>
+                    <Link
+                      href="/aitutor"
+                      className="block px-3 py-2 text-white hover:text-[#FFC107]"
+                    >
+                      AI Tutor
+                    </Link>
+                  </>
+                )}
                 <Link
                   href="/#programs"
                   className="block px-3 py-2 text-white hover:text-[#FFC107]"
