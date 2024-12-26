@@ -105,19 +105,19 @@ export default function AITutor() {
       <div className="h-screen flex flex-col bg-gradient-to-b from-gray-50 to-gray-100">
         {/* Header */}
         <div className="bg-white shadow-sm flex-none">
-          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-2">
             <div className="flex items-center justify-between">
               {/* Progress meter */}
-              <div className="flex items-center space-x-4">
-                <div className="text-2xl font-bold text-gray-700">Progress</div>
-                <div className="w-64 h-4 bg-gray-200 rounded-full overflow-hidden">
+              <div className="flex items-center space-x-2">
+                <div className="text-sm font-semibold text-gray-600">Progress</div>
+                <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-blue-500 rounded-full transition-all duration-500"
                     style={{ width: `${(20 - questionsLeft) * 5}%` }}
                   />
                 </div>
-                <div className="text-sm text-gray-600">
-                  {questionsLeft} questions remaining
+                <div className="text-xs text-gray-500">
+                  {questionsLeft} left
                 </div>
               </div>
 
@@ -128,7 +128,7 @@ export default function AITutor() {
               />
 
               {/* Right side: Empty for balance */}
-              <div className="w-64"></div>
+              <div className="w-32"></div>
             </div>
           </div>
         </div>

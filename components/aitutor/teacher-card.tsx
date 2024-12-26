@@ -22,14 +22,18 @@ export const TeacherCard: React.FC<TeacherCardProps> = ({
       title: 'Math Teacher',
       image: '/images/avatars/math-tutor.jpg',
       fallbackImage: 'https://api.dicebear.com/7.x/avataaars/svg?seed=math',
-      color: 'blue'
+      color: 'blue',
+      gradientFrom: 'from-blue-400',
+      gradientTo: 'to-blue-600'
     },
     science: {
       name: 'Ms. Sarah',
       title: 'Science Teacher',
       image: '/images/avatars/science-tutor.jpg',
       fallbackImage: 'https://api.dicebear.com/7.x/avataaars/svg?seed=science',
-      color: 'purple'
+      color: 'purple',
+      gradientFrom: 'from-purple-400',
+      gradientTo: 'to-purple-600'
     }
   }[teacher];
 
@@ -40,7 +44,7 @@ export const TeacherCard: React.FC<TeacherCardProps> = ({
       whileHover={{ scale: disabled ? 1 : 1.02 }}
       whileTap={{ scale: disabled ? 1 : 0.98 }}
       className={cn(
-        "h-full rounded-lg overflow-hidden cursor-pointer bg-white shadow-md border",
+        "h-full rounded-lg overflow-hidden cursor-pointer bg-white shadow-md border group relative",
         isSelected ? [
           teacher === 'math' 
             ? "border-blue-500" 
@@ -50,7 +54,22 @@ export const TeacherCard: React.FC<TeacherCardProps> = ({
       )}
       onClick={disabled ? undefined : onSelect}
     >
-      <div className="p-4">
+      {/* Gradient Overlay */}
+      <div 
+        className={`
+          absolute inset-0 
+          bg-gradient-to-br 
+          ${teacherInfo.gradientFrom} 
+          ${teacherInfo.gradientTo} 
+          opacity-0 
+          group-hover:opacity-20 
+          transition-opacity 
+          duration-300 
+          pointer-events-none
+        `}
+      />
+
+      <div className="p-4 relative z-10">
         {/* Image Container */}
         <div className="relative aspect-square mb-4">
           <Image

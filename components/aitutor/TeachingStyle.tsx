@@ -34,11 +34,11 @@ export const TeachingStyleSelector: React.FC<TeachingStyleSelectorProps> = ({
   onStyleSelect,
 }) => {
   return (
-    <div className="flex gap-4 p-4">
+    <div className="flex gap-2 p-2">
       {(Object.keys(teachingStyles) as TeachingStyle[]).map((style) => (
         <motion.div
           key={style}
-          className={`relative p-4 rounded-lg cursor-pointer ${
+          className={`relative p-2 rounded-lg cursor-pointer flex items-center ${
             selectedStyle === style
               ? 'bg-blue-50 border-2 border-blue-500'
               : 'bg-white border border-gray-200 hover:border-blue-300'
@@ -47,9 +47,11 @@ export const TeachingStyleSelector: React.FC<TeachingStyleSelectorProps> = ({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
-          <div className="text-2xl mb-2">{teachingStyles[style].icon}</div>
-          <h3 className="font-medium text-sm mb-1">{teachingStyles[style].title}</h3>
-          <p className="text-xs text-gray-600">{teachingStyles[style].description}</p>
+          <div className="text-xl mr-2">{teachingStyles[style].icon}</div>
+          <div>
+            <h3 className="font-medium text-xs mb-0.5">{teachingStyles[style].title}</h3>
+            <p className="text-[10px] text-gray-600 leading-tight">{teachingStyles[style].description}</p>
+          </div>
         </motion.div>
       ))}
     </div>
