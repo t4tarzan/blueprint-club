@@ -111,10 +111,10 @@ export default function AITutor() {
 
         {/* Main Content */}
         <div className="flex-1 overflow-hidden">
-          <div className="h-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="h-full flex gap-6">
+          <div className="h-full max-w-[1800px] mx-auto px-3">
+            <div className="h-full flex gap-4">
               {/* Left Teacher */}
-              <div className="w-72 flex-none">
+              <div className="w-[16%] flex-none">
                 <TeacherCard
                   teacher="math"
                   isSelected={selectedTeacher === 'math'}
@@ -135,7 +135,7 @@ export default function AITutor() {
               </div>
 
               {/* Right Teacher */}
-              <div className="w-72 flex-none">
+              <div className="w-[16%] flex-none">
                 <TeacherCard
                   teacher="science"
                   isSelected={selectedTeacher === 'science'}
