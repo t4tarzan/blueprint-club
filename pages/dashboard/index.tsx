@@ -19,7 +19,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (status === 'unauthenticated' && !isNavigating) {
       setIsNavigating(true);
-      router.replace('/auth/signin');
+      router.replace('/');
     }
   }, [status, router, isNavigating]);
 

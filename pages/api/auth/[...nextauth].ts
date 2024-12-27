@@ -105,6 +105,14 @@ export const authOptions: NextAuthOptions = {
         user: token.user as unknown as AuthUser,
       };
     },
+    async redirect({ url, baseUrl }) {
+      // After sign in, redirect to dashboard
+      if (url === baseUrl || url === '/' || url.startsWith(`${baseUrl}/auth`)) {
+        return `${baseUrl}/dashboard`;
+      }
+      // Default to homepage for other cases
+      return url.startsWith(baseUrl) ? url : baseUrl;
+    },
   },
   pages: {
     signIn: '/',

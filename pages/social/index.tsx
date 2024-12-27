@@ -22,7 +22,7 @@ export default function Social() {
   useEffect(() => {
     if (status === 'unauthenticated' && !isNavigating) {
       setIsNavigating(true);
-      router.replace('/auth/signin');
+      router.replace('/');
     }
   }, [status, router, isNavigating]);
 
