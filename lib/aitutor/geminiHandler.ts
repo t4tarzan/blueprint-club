@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AIResponse, TeachingStyle, VisualData, Point, WhiteboardContent } from '@/types/aitutor';
+import { processAIResponse } from './responseProcessor';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -92,74 +93,29 @@ export const handleGeminiRequest = async (request: GeminiRequest): Promise<AIRes
     const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
     const prompt = generatePrompt(request);
     const result = await model.generateContent(prompt);
-    const response = JSON.parse(result.response.text());
+    const response = await result.response;
+    const text = response.text();
 
-    // Map each section to its corresponding ContentSection type
-    const sectionMap: Record<keyof WhiteboardContent, any> = {
-      steps: response.steps,
-      visual: response.visual,
-      practice: response.practice,
-      concepts: response.concepts
-    };
+    console.log('=== Raw Gemini Response ===');
+    console.log(text);
 
-    const content: WhiteboardContent = {
-      // 'steps' section
-      steps: typeof sectionMap.steps === 'string' ? sectionMap.steps : '',
+    // Process the response
+    const processedResponse = processAIResponse(text);
+    
+    console.log('=== Processed Response ===');
+    console.log(JSON.stringify(processedResponse, null, 2));
 
-      // 'visual' section
-      visual: sectionMap.visual?.type === 'function' ? sectionMap.visual : undefined,
-
-      // 'practice' section
-      practice: sectionMap.practice?.problems ? 
-        sectionMap.practice.problems.map((p: any) => 
-          `Question: ${p.question}\n` +
-          `Difficulty: ${p.difficulty}\n` +
-          (p.hint ? `Hint: ${p.hint}\n` : '') +
-          `Solution: ${p.solution}`
-        ).join('\n\n') : '',
-
-      // 'concepts' section
-      concepts: sectionMap.concepts ? 
-        `${sectionMap.concepts.title}\n\n` +
-        `${sectionMap.concepts.description}\n\n` +
-        'Related Topics:\n' +
-        sectionMap.concepts.relatedTopics.map((t: any) => 
-          `• ${t.name}: ${t.description}`
-        ).join('\n') +
-        '\n\nExamples:\n' +
-        sectionMap.concepts.examples.map((e: any) => 
-          `Problem: ${e.problem}\nSolution: ${e.solution}`
-        ).join('\n\n') : ''
-    };
-
-    // Validate that each section exists and has content
-    const validSections = Object.entries(content).reduce((acc, [key, value]) => {
-      if (key === 'visual') {
-        acc[key] = !!value;
-      } else {
-        acc[key] = typeof value === 'string' && value.trim().length > 0;
-      }
-      return acc;
-    }, {} as Record<keyof WhiteboardContent, boolean>);
-
-    if (!Object.values(validSections).some(v => v)) {
-      throw new Error('No valid content sections found in response');
-    }
-
-    return {
-      type: 'success',
-      content
-    };
+    return processedResponse;
   } catch (error) {
-    console.error('Error handling Gemini request:', error);
+    console.error('Gemini Request Error:', error);
     return {
       type: 'error',
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      error: 'Failed to process request',
       content: {
-        steps: 'Error processing response',
+        steps: 'Error processing request',
         visual: undefined,
-        practice: '',
-        concepts: ''
+        practice: 'No practice problems available',
+        concepts: 'No concepts available'
       }
     };
   }

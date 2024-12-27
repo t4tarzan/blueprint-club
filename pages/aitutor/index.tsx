@@ -68,10 +68,11 @@ const AITutorPage: NextPage = () => {
       const data = await response.json();
       console.log('API response:', data);
 
-      const formattedContent = processAIResponse(data.steps, text);
-      console.log('Formatted content:', formattedContent);
-      
-      setWhiteboardContent(formattedContent);
+      if (data.type === 'success' && data.content) {
+        setWhiteboardContent(data.content);
+      } else {
+        throw new Error('Invalid response format');
+      }
       
       if (typeof data.questionsLeft === 'number') {
         setQuestionsLeft(data.questionsLeft);
@@ -158,7 +159,6 @@ const AITutorPage: NextPage = () => {
                   content={whiteboardContent}
                   isProcessing={isProcessing}
                   activeSection={activeSection}
-                  teachingStyle={teachingStyle}
                 />
               </div>
 

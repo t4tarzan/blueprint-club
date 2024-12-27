@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { prisma } from '@/lib/prisma';
+import { processAIResponse } from '@/lib/aitutor/responseProcessor';
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
@@ -53,86 +54,75 @@ export default async function handler(
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Handle question count
-    let questionsLeft = 20;
-    if (session.user.email !== 'test@example.com') {
-      try {
-        // Get or create tutor session
-        let tutorSession = await prisma.tutorSession.findFirst({
-          where: {
-            userId: session.user.id,
-            questionsLeft: { gt: 0 }
-          }
-        });
-
-        if (!tutorSession) {
-          tutorSession = await prisma.tutorSession.create({
-            data: {
-              userId: session.user.id,
-              questionsLeft: 20
-            }
-          });
+    // Get remaining questions
+    let questionsLeft = 3; // Default value
+    try {
+      const tutorSession = await prisma.tutorSession.findFirst({
+        where: {
+          userId: session.user.id,
+          questionsLeft: { gt: 0 }
+        },
+        orderBy: {
+          createdAt: 'desc'
         }
+      });
 
-        // Update questions left
-        await prisma.tutorSession.update({
-          where: { id: tutorSession.id },
-          data: { questionsLeft: tutorSession.questionsLeft - 1 }
-        });
-
+      if (tutorSession) {
         questionsLeft = tutorSession.questionsLeft - 1;
-      } catch (dbError) {
-        console.error('Database Error:', dbError);
-        // Continue with default questionsLeft value
       }
+    } catch (dbError) {
+      console.error('Database Error:', dbError);
     }
 
     const prompt = `You are an expert ${subject} tutor. A student has asked: "${text}"
 
-    Format your response as a JSON object with these EXACT sections:
+    Format your response as a JSON object with these EXACT sections. Make sure to include ALL sections with proper content:
+
     {
-      "steps": "Provide a clear step-by-step solution here. Break down the explanation into numbered steps.",
+      "steps": "1. First step explanation\n2. Second step explanation\n3. Third step explanation",
       
       "visual": {
         "type": "function",
         "data": {
           "function": "sin(x)",  // Use simple JavaScript notation (sin, cos, abs)
-          "domain": [-10, 10]    // Specify appropriate domain
+          "domain": [-10, 10],   // Specify appropriate domain
+          "keyPoints": {
+            "intercepts": [[0, 0]],  // Array of [x, y] points
+            "maxima": [[1.5, 1]],    // Array of [x, y] points
+            "minima": [[-1.5, -1]]   // Array of [x, y] points
+          }
         }
       },
       
       "practice": {
         "problems": [
           {
-            "question": "A similar but different practice problem",
-            "difficulty": "easy|medium|hard",
+            "question": "Here's a similar problem to practice with",
+            "difficulty": "medium",
             "solution": "Step-by-step solution to the practice problem"
           }
         ]
       },
       
       "concepts": {
-        "title": "Main concept or topic",
-        "description": "Brief overview of the key concept",
+        "title": "Main Concept",
+        "description": "Clear explanation of the main concept",
         "relatedTopics": [
           {
-            "name": "Related concept name",
-            "description": "How this concept connects to the main topic"
+            "name": "Related Topic",
+            "description": "How this topic connects to the main concept"
           }
         ]
       }
     }
 
-    Important Instructions:
-    1. Return ONLY the JSON object above, no other text or markers
-    2. For mathematical functions:
-       - Use simple JavaScript notation (sin, cos, abs)
-       - Do NOT include Math. prefix
-       - Example: sin(2*x + 1) not Math.sin(2*x + 1)
-    3. Keep explanations clear and concise
-    4. Always include all sections
-    5. For step-by-step explanations, use numbers (1., 2., etc.)
-    6. Make sure the JSON is valid and properly formatted`;
+    Important:
+    1. ALL sections must have content - never return empty strings
+    2. Steps must be numbered (1., 2., etc.)
+    3. Visual must include function, domain, and keyPoints
+    4. Practice must include question, difficulty, and solution
+    5. Concepts must include title, description, and relatedTopics
+    6. Return ONLY the JSON object, no other text`;
 
     console.log('Sending prompt to Gemini:', prompt);
 
@@ -140,50 +130,60 @@ export default async function handler(
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const text_response = response.text();
-      console.log('Raw Gemini response:', text_response); // Debug log
+      
+      console.log('=== Raw API Response ===');
+      console.log(text_response);
 
       try {
-        // Parse the JSON response
-        const jsonResponse = JSON.parse(text_response);
-        console.log('Parsed response:', jsonResponse);
+        // Process the response using our responseProcessor
+        const processedResponse = processAIResponse(text_response);
+        console.log('=== Processed Response ===', JSON.stringify(processedResponse, null, 2));
 
-        // Extract the actual response from the JSON string in steps
-        let parsedData = jsonResponse;
-        if (typeof jsonResponse.steps === 'string' && jsonResponse.steps.includes('Here\'s what I understood:')) {
-          try {
-            const match = jsonResponse.steps.match(/```json\n([\s\S]*?)\n```/);
-            if (match) {
-              const innerJson = JSON.parse(match[1]);
-              parsedData = {
-                ...innerJson,
-                questionsLeft
-              };
-            }
-          } catch (innerParseError) {
-            console.error('Failed to parse inner JSON:', innerParseError);
+        // Verify content before sending
+        const { content } = processedResponse;
+        console.log('=== Content Verification ===');
+        console.log('Steps:', content.steps?.slice(0, 100));
+        console.log('Practice:', content.practice?.slice(0, 100));
+        console.log('Concepts:', content.concepts?.slice(0, 100));
+        console.log('Visual:', content.visual);
+
+        // Add default content if any section is empty
+        const finalContent = {
+          ...processedResponse,
+          content: {
+            steps: content.steps || 'Analyzing your question...',
+            visual: content.visual,
+            practice: content.practice || 'Preparing practice problems...',
+            concepts: content.concepts || 'Loading concept explanations...'
           }
-        }
+        };
 
-        return res.status(200).json(parsedData);
-      } catch (parseError) {
-        console.error('Failed to parse JSON response:', parseError);
-        console.error('Raw text causing parse error:', text_response);
-        // Fallback to text response if JSON parsing fails
-        return res.status(200).json({
-          steps: cleanResponse(text_response),
-          visual: null,
-          practice: '',
-          concepts: '',
-          questionsLeft
+        console.log('=== Final Response ===', JSON.stringify(finalContent, null, 2));
+        return res.status(200).json(finalContent);
+      } catch (error) {
+        console.error('Error processing response:', error);
+        return res.status(500).json({
+          type: 'error',
+          error: 'Failed to process response',
+          content: {
+            steps: 'Error processing response',
+            visual: null,
+            practice: 'No practice problems available',
+            concepts: 'No concepts available'
+          }
         });
       }
-    } catch (aiError: any) {
-      console.error('AI Generation Error:', aiError);
-      console.error('Full error details:', aiError); // Debug log
-      res.status(500).json({ 
-        error: 'Failed to generate AI response',
-        details: aiError.message,
-        steps: 'Sorry, I had trouble understanding that. Could you rephrase your question?'
+    } catch (error) {
+      console.error('AI Generation Error:', error);
+      return res.status(500).json({
+        type: 'error',
+        error: 'Failed to generate response',
+        content: {
+          steps: 'Error generating response',
+          visual: null,
+          practice: 'No practice problems available',
+          concepts: 'No concepts available'
+        }
       });
     }
   } catch (error: any) {
