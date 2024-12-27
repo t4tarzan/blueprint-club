@@ -58,7 +58,11 @@ const HoverCard: React.FC<{
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 10 }}
         transition={{ duration: 0.2 }}
-        className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+        className="fixed transform -translate-x-1/2 left-1/2 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 z-[9999]"
+        style={{
+          top: 'calc(var(--hover-y, 0) + 45px)',
+          left: 'var(--hover-x, 50%)'
+        }}
       >
         <div className="p-4">
           <div className="flex items-center mb-3">
@@ -85,9 +89,21 @@ export const TeachingStyleSelector: React.FC<TeachingStyleSelectorProps> = ({
   onStyleSelect,
 }) => {
   const [hoveredStyle, setHoveredStyle] = useState<TeachingStyle | null>(null);
+  const [hoverPosition, setHoverPosition] = useState({ x: 0, y: 0 });
+
+  const handleMouseEnter = (style: TeachingStyle, event: React.MouseEvent) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    document.documentElement.style.setProperty('--hover-x', `${rect.left + rect.width/2}px`);
+    document.documentElement.style.setProperty('--hover-y', `${rect.top}px`);
+    setHoveredStyle(style);
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredStyle(null);
+  };
 
   return (
-    <div className="flex gap-2 p-2">
+    <div className="flex gap-2 p-2 relative">
       {(Object.keys(teachingStyles) as TeachingStyle[]).map((style) => (
         <motion.div
           key={style}
@@ -97,8 +113,8 @@ export const TeachingStyleSelector: React.FC<TeachingStyleSelectorProps> = ({
               : 'bg-white border border-gray-200 hover:border-blue-300'
           }`}
           onClick={() => onStyleSelect(style)}
-          onMouseEnter={() => setHoveredStyle(style)}
-          onMouseLeave={() => setHoveredStyle(null)}
+          onMouseEnter={(e) => handleMouseEnter(style, e)}
+          onMouseLeave={handleMouseLeave}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
