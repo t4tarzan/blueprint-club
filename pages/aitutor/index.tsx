@@ -7,13 +7,23 @@ import { TeachingStyleSelector } from '@/components/aitutor/TeachingStyleSelecto
 import type { WhiteboardContent, TeachingStyle, ContentSection, FunctionGraphData } from '@/types/aitutor';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { NextPage } from 'next';
-import { processAIResponse } from '@/lib/response-handler';
 
-const defaultVisualData: FunctionGraphData = {
-  type: 'function',
-  data: {
-    function: 'x',
-    domain: [-10, 10]
+const defaultWhiteboardContent: WhiteboardContent = {
+  steps: '',
+  visual: {
+    type: 'function',
+    data: {
+      function: 'x',
+      domain: [-10, 10]
+    }
+  },
+  practice: {
+    problems: []
+  },
+  concepts: {
+    title: '',
+    description: '',
+    relatedTopics: []
   }
 };
 
@@ -21,12 +31,7 @@ const AITutorPage: NextPage = () => {
   const [selectedTeacher, setSelectedTeacher] = useState<'math' | 'science' | null>(null);
   const [questionsLeft, setQuestionsLeft] = useState(20);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [whiteboardContent, setWhiteboardContent] = useState<WhiteboardContent>({
-    steps: '',
-    visual: defaultVisualData,
-    practice: '',
-    concepts: ''
-  });
+  const [whiteboardContent, setWhiteboardContent] = useState<WhiteboardContent>(defaultWhiteboardContent);
   const [teachingStyle, setTeachingStyle] = useState<TeachingStyle>('step-by-step');
   const [activeSection, setActiveSection] = useState<ContentSection>('steps');
 
@@ -66,14 +71,45 @@ const AITutorPage: NextPage = () => {
       }
 
       const data = await response.json();
-      console.log('API response:', data);
+      console.log('=== API Response ===');
+      console.log('Raw data:', JSON.stringify(data, null, 2));
+
+      if (data.type === 'error') {
+        console.error('Server returned error:', data.error);
+        setWhiteboardContent(prevContent => ({
+          ...prevContent,
+          steps: `Sorry, there was an error: ${data.error || 'Unknown error'}`,
+          visual: defaultWhiteboardContent.visual,
+          practice: defaultWhiteboardContent.practice,
+          concepts: defaultWhiteboardContent.concepts
+        }));
+        return;
+      }
 
       if (data.type === 'success' && data.content) {
-        setWhiteboardContent(data.content);
+        console.log('Setting whiteboard content:', JSON.stringify(data.content, null, 2));
+        setWhiteboardContent(prevContent => {
+          console.log('Previous content:', JSON.stringify(prevContent, null, 2));
+          const newContent = {
+            steps: data.content.steps || prevContent.steps,
+            visual: data.content.visual || prevContent.visual,
+            practice: data.content.practice || prevContent.practice,
+            concepts: data.content.concepts || prevContent.concepts
+          };
+          console.log('New content:', JSON.stringify(newContent, null, 2));
+          return newContent;
+        });
       } else {
-        throw new Error('Invalid response format');
+        console.error('Invalid response format:', data);
+        setWhiteboardContent(prevContent => ({
+          ...prevContent,
+          steps: 'Sorry, received an invalid response format',
+          visual: defaultWhiteboardContent.visual,
+          practice: defaultWhiteboardContent.practice,
+          concepts: defaultWhiteboardContent.concepts
+        }));
       }
-      
+
       if (typeof data.questionsLeft === 'number') {
         setQuestionsLeft(data.questionsLeft);
       }
@@ -82,9 +118,21 @@ const AITutorPage: NextPage = () => {
       setWhiteboardContent(prev => ({
         ...prev,
         steps: `Your Question: ${text}\n\nSorry, there was an error processing your request.`,
-        visual: defaultVisualData,
-        practice: '',
-        concepts: ''
+        visual: {
+          type: 'function',
+          data: {
+            function: 'x',
+            domain: [-10, 10]
+          }
+        },
+        practice: {
+          problems: []
+        },
+        concepts: {
+          title: '',
+          description: '',
+          relatedTopics: []
+        }
       }));
     } finally {
       setIsProcessing(false);

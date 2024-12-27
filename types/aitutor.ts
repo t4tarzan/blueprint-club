@@ -1,6 +1,7 @@
 import type { Point } from './graph';
 
 export type TeachingStyle = 'step-by-step' | 'quick-response' | 'interactive';
+
 export type ContentSection = 'steps' | 'visual' | 'practice' | 'concepts';
 
 export interface AITutorState {
@@ -26,7 +27,22 @@ export interface GraphDisplayProps {
   title: string;
 }
 
-export interface FunctionGraphData {
+export type PracticeProblem = {
+  question: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  solution: string;
+};
+
+export type ConceptInfo = {
+  title: string;
+  description: string;
+  relatedTopics: Array<{
+    name: string;
+    description: string;
+  }>;
+};
+
+export type FunctionGraphData = {
   type: 'function';
   data: {
     function: string;
@@ -37,15 +53,31 @@ export interface FunctionGraphData {
       minima?: [number, number][];
     };
   };
-}
+};
 
 export type VisualData = FunctionGraphData;
+
+export type TutorResponse = {
+  type: 'success' | 'error';
+  error?: string;
+  content: {
+    steps: string;
+    visual?: FunctionGraphData;
+    practice: {
+      problems: PracticeProblem[];
+    };
+    concepts: ConceptInfo;
+  };
+  questionsLeft?: number;
+};
 
 export interface WhiteboardContent {
   steps: string;
   visual?: VisualData;
-  practice: string;
-  concepts: string;
+  practice: {
+    problems: PracticeProblem[];
+  };
+  concepts: ConceptInfo;
 }
 
 export interface BaseVisualProps {
@@ -67,12 +99,13 @@ export interface ProcessedAIResponse {
   relatedConcepts?: string;
 }
 
-export interface TeacherInfo {
+export type TeacherInfo = {
   id: string;
   name: string;
   subject: 'math' | 'science';
   description: string;
   avatar: string;
-}
+  style: TeachingStyle;
+};
 
 export type { Point };

@@ -123,10 +123,45 @@ export function processAIResponse(rawResponse: string, question: string): Whiteb
   const parsedData = extractJsonFromResponse(rawResponse);
   console.log('Parsed data:', parsedData);
 
+  const defaultVisual = {
+    type: 'function' as const,
+    data: {
+      function: 'x',
+      domain: [-10, 10] as [number, number]
+    }
+  };
+
+  if (!parsedData) {
+    return {
+      steps: '',
+      visual: defaultVisual,
+      practice: { problems: [] },
+      concepts: {
+        title: '',
+        description: '',
+        relatedTopics: []
+      }
+    };
+  }
+
+  const formattedVisual = formatVisual(parsedData);
+  const formattedPractice = formatPractice(parsedData);
+  const formattedConcepts = formatConcepts(parsedData);
+
   return {
     steps: `Your Question: ${question}\n\n${formatSteps(parsedData)}`,
-    visual: formatVisual(parsedData),
-    practice: formatPractice(parsedData),
-    concepts: formatConcepts(parsedData)
+    visual: formattedVisual || defaultVisual,
+    practice: {
+      problems: formattedPractice ? formattedPractice.split('\n\n').filter(Boolean).map(p => ({
+        question: p.split('\n')[0].replace('Question: ', ''),
+        difficulty: 'medium' as const,
+        solution: p.split('\n')[2].replace('Solution: ', '')
+      })) : []
+    },
+    concepts: {
+      title: formattedConcepts ? formattedConcepts.split('\n\n')[0] : '',
+      description: formattedConcepts ? formattedConcepts.split('\n\n')[1] : '',
+      relatedTopics: formattedConcepts ? formattedConcepts.split('\n\n')[2].split('\n').filter(Boolean).map(t => ({ name: t.replace('• ', '').split(':')[0], description: t.replace('• ', '').split(':')[1] })) : []
+    }
   };
 }

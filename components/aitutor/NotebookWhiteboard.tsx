@@ -39,11 +39,33 @@ export const NotebookWhiteboard: React.FC<NotebookWhiteboardProps> = ({
       setLines([]);  // Clear lines for visual section
       return;
     }
+
+    // Convert section content to lines based on type
+    let textContent = '';
+    if (activeSection === 'steps') {
+      textContent = sectionContent as string || '';
+    } else if (activeSection === 'practice' && sectionContent && typeof sectionContent === 'object') {
+      const practiceContent = sectionContent as { problems: Array<{ question: string, difficulty?: string, solution: string }> };
+      if (Array.isArray(practiceContent.problems)) {
+        textContent = practiceContent.problems
+          .map((p, i) => `Problem ${i + 1}:\n${p.question}\n\nDifficulty: ${p.difficulty || 'Medium'}\n\nSolution:\n${p.solution}`)
+          .join('\n\n');
+      }
+    } else if (activeSection === 'concepts' && sectionContent && typeof sectionContent === 'object') {
+      const conceptContent = sectionContent as { title: string, description: string, relatedTopics: Array<{ name: string, description: string }> };
+      if (conceptContent.title && conceptContent.description) {
+        textContent = `${conceptContent.title}\n\n${conceptContent.description}\n\nRelated Topics:\n` +
+          (Array.isArray(conceptContent.relatedTopics) ? 
+            conceptContent.relatedTopics.map(topic => `• ${topic.name}: ${topic.description}`).join('\n') :
+            '');
+      }
+    }
     
-    // Handle text sections
-    if (typeof sectionContent === 'string') {
-      // Remove any "No X available" messages
-      const cleanContent = sectionContent
+    console.log('Generated text content:', textContent);
+    
+    // Clean and split the content
+    if (textContent) {
+      const cleanContent = textContent
         .replace(/Your Question:.*?\n/g, '')
         .replace(/No .*? available/g, '')
         .replace(/Loading .*?\.\.\./g, '')
@@ -63,7 +85,7 @@ export const NotebookWhiteboard: React.FC<NotebookWhiteboardProps> = ({
         setLines([]);
       }
     } else {
-      console.log('Invalid content type:', typeof sectionContent);
+      console.log('No content to process');
       setLines([]);
     }
   }, [content, activeSection]);
@@ -71,7 +93,7 @@ export const NotebookWhiteboard: React.FC<NotebookWhiteboardProps> = ({
   const renderContent = () => {
     console.log('=== Rendering Content ===');
     console.log('Active Section:', activeSection);
-    console.log('Content for section:', content[activeSection]);
+    console.log('Content for section:', JSON.stringify(content[activeSection], null, 2));
     console.log('Lines:', lines);
     console.log('Visual Data:', content.visual);
 
@@ -89,7 +111,16 @@ export const NotebookWhiteboard: React.FC<NotebookWhiteboardProps> = ({
     }
 
     // Handle empty state for each section
-    if (!content[activeSection] || (Array.isArray(lines) && lines.length === 0)) {
+    let isEmpty = false;
+    if (activeSection === 'steps') {
+      isEmpty = !content.steps;
+    } else if (activeSection === 'practice') {
+      isEmpty = !content.practice?.problems?.length;
+    } else if (activeSection === 'concepts') {
+      isEmpty = !content.concepts?.description;
+    }
+
+    if (isEmpty) {
       return (
         <p className="text-gray-500 italic">
           {activeSection === 'steps' && 'Ask me a question to begin...'}
@@ -103,7 +134,7 @@ export const NotebookWhiteboard: React.FC<NotebookWhiteboardProps> = ({
     // Render text content with handwritten effect
     return (
       <HandwrittenText
-        text={typeof content[activeSection] === 'string' ? content[activeSection] : lines.join('\n')}
+        text={lines.join('\n')}
         speed={30}
         className="space-y-4 whitespace-pre-wrap"
       />

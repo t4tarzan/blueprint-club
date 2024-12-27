@@ -3,22 +3,24 @@ import { TeachingStyleSelector } from './TeachingStyleSelector';
 import { NotebookWhiteboard } from './NotebookWhiteboard';
 import { VoiceStreaming } from './voice-streaming';
 import { TeacherCard } from './teacher-card';
-import type { TeacherInfo, TeachingStyle, WhiteboardContent, ContentSection } from '@/types/aitutor';
+import type { TeacherInfo, TeachingStyle, TutorResponse, ContentSection } from '@/types/aitutor';
+
+const defaultVisual = undefined;
 
 export const AITutor: React.FC = () => {
   const [selectedTeacher, setSelectedTeacher] = useState<'math' | 'science'>('math');
   const [teachingStyle, setTeachingStyle] = useState<TeachingStyle>('step-by-step');
   const [activeSection, setActiveSection] = useState<ContentSection>('steps');
-  const [content, setContent] = useState<WhiteboardContent>({
+  const [content, setContent] = useState<TutorResponse['content']>({
     steps: '',
-    visual: undefined,
-    practice: '',
-    concepts: ''
+    visual: defaultVisual,
+    practice: { problems: [] },
+    concepts: { title: '', description: '', relatedTopics: [] }
   });
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
-  const [questionsLeft, setQuestionsLeft] = useState(20);
+  const [questionsLeft, setQuestionsLeft] = useState<number>(20);
 
   const handleTeacherSelect = (teacher: 'math' | 'science') => {
     setSelectedTeacher(teacher);
@@ -42,9 +44,9 @@ export const AITutor: React.FC = () => {
     // First update to show the transcribed text
     setContent({
       steps: `Processing your question...\n\n${question}`,
-      visual: undefined,
-      practice: '',
-      concepts: ''
+      visual: defaultVisual,
+      practice: { problems: [] },
+      concepts: { title: '', description: '', relatedTopics: [] }
     });
 
     try {
@@ -71,40 +73,37 @@ export const AITutor: React.FC = () => {
       const {
         steps = '',
         visual,
-        practice = '',
-        concepts = ''
+        practice = { problems: [] },
+        concepts = { title: '', description: '', relatedTopics: [] }
       } = parsedData;
 
       // Format steps content
       const stepsContent = typeof steps === 'string' ? steps : steps.steps || '';
 
       // Format each section
-      const formattedContent: WhiteboardContent = {
+      const formattedContent: TutorResponse['content'] = {
         steps: `Your Question: ${question}\n\n${stepsContent}`,
         visual: visual?.Visual || visual,
-        practice: practice
-          .replace(/Problem \d+ \((Easy|Medium|Hard)\):/g, '\n$&\n')
-          .replace(/\n{3,}/g, '\n\n'),
-        concepts: concepts
-          .replace(/Title:/g, '\n# ')
-          .replace(/Description:/g, '\n')
-          .replace(/Related Topics:/g, '\n## Related Topics:\n')
-          .replace(/Examples:/g, '\n## Examples:\n')
-          .replace(/Problem:/g, '\n### Problem:\n')
-          .replace(/Solution:/g, '\n### Solution:\n')
+        practice: practice.problems
+          .map((problem: { difficulty: string; text: string }, index: number) => 
+            `Problem ${index + 1} (${problem.difficulty}): ${problem.text}`)
+          .join('\n\n'),
+        concepts: concepts.title
+          ? { title: concepts.title, description: concepts.description, relatedTopics: concepts.relatedTopics }
+          : { title: '', description: '', relatedTopics: [] }
       };
 
       setContent(formattedContent);
-      setQuestionsLeft(prev => Math.max(0, prev - 1));
+      setActiveSection('steps');
+      setQuestionsLeft((prev: number) => Math.max(0, prev - 1));
 
-    } catch (err) {
+    } catch (err: any) {
+      console.error('Error processing response:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
-      setContent({
+      setContent((prev: TutorResponse['content']) => ({
+        ...prev,
         steps: `Your Question: ${question}\n\nSorry, I encountered an error while processing your question.`,
-        visual: undefined,
-        practice: '',
-        concepts: ''
-      });
+      }));
     } finally {
       setIsProcessing(false);
     }

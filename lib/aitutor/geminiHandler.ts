@@ -1,6 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AIResponse, TeachingStyle, VisualData, Point, WhiteboardContent } from '@/types/aitutor';
-import { processAIResponse } from './responseProcessor';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
@@ -88,35 +87,62 @@ const generatePrompt = (request: GeminiRequest): string => {
   return prompt;
 };
 
-export const handleGeminiRequest = async (request: GeminiRequest): Promise<AIResponse> => {
+const defaultVisual = {
+  type: 'function' as const,
+  data: {
+    function: 'x',
+    domain: [-10, 10] as [number, number]
+  }
+};
+
+export async function handleGeminiRequest(request: GeminiRequest): Promise<AIResponse> {
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
     const prompt = generatePrompt(request);
     const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    const text = result.response.text();
 
-    console.log('=== Raw Gemini Response ===');
-    console.log(text);
+    // Parse JSON once
+    let parsedContent;
+    try {
+      const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
+      if (jsonMatch) {
+        parsedContent = JSON.parse(jsonMatch[1]);
+      } else {
+        parsedContent = JSON.parse(text);
+      }
+    } catch (error) {
+      console.error('Failed to parse response:', error);
+      return {
+        type: 'error',
+        content: {
+          steps: 'Error processing response',
+          visual: defaultVisual,
+          practice: { problems: [] },
+          concepts: { title: '', description: '', relatedTopics: [] }
+        }
+      };
+    }
 
-    // Process the response
-    const processedResponse = processAIResponse(text);
-    
-    console.log('=== Processed Response ===');
-    console.log(JSON.stringify(processedResponse, null, 2));
-
-    return processedResponse;
+    return {
+      type: 'success',
+      content: {
+        steps: parsedContent.steps || 'No steps available',
+        visual: parsedContent.visual || defaultVisual,
+        practice: parsedContent.practice || { problems: [] },
+        concepts: parsedContent.concepts || { title: '', description: '', relatedTopics: [] }
+      }
+    };
   } catch (error) {
-    console.error('Gemini Request Error:', error);
+    console.error('Error in Gemini request:', error);
     return {
       type: 'error',
-      error: 'Failed to process request',
       content: {
-        steps: 'Error processing request',
-        visual: undefined,
-        practice: 'No practice problems available',
-        concepts: 'No concepts available'
+        steps: 'Error generating response',
+        visual: defaultVisual,
+        practice: { problems: [] },
+        concepts: { title: '', description: '', relatedTopics: [] }
       }
     };
   }
-};
+}
