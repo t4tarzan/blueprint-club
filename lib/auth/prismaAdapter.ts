@@ -1,37 +1,38 @@
-import { Adapter } from 'next-auth/adapters';
+import { Adapter, AdapterUser } from 'next-auth/adapters';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import { prisma } from '@/lib/prisma';
-import { Prisma, Role, User } from '@prisma/client';
+import { Prisma, Role, User, MembershipTier, TeamMember } from '@prisma/client';
 
-export interface AdapterUser extends User {
-  teams: {
-    id: string;
-    name: string;
-    slug: string;
-    role: Role;
-  }[];
+export interface TeamInfo {
+  id: string;
+  name: string;
+  slug: string;
+  role: Role;
 }
 
-interface CreateUserData {
-  email: string;
-  emailVerified?: Date | null;
-  name?: string | null;
-  image?: string | null;
-}
+type UserWithTeams = User & {
+  teams: (TeamMember & {
+    team: {
+      id: string;
+      name: string;
+      slug: string;
+    };
+  })[];
+};
 
 export function CustomPrismaAdapter(): Adapter {
-  const adapter = PrismaAdapter(prisma);
+  const baseAdapter = PrismaAdapter(prisma);
 
   return {
-    ...adapter,
-    createUser: async (data: CreateUserData): Promise<AdapterUser> => {
+    ...baseAdapter,
+    createUser: async (data: { email: string; emailVerified?: Date | null; name?: string | null; image?: string | null }) => {
       const user = await prisma.user.create({
         data: {
           email: data.email,
           emailVerified: data.emailVerified,
           name: data.name,
           image: data.image,
-          membershipTier: 'FREE',
+          membershipTier: MembershipTier.FREE,
         },
         include: {
           teams: {
@@ -42,7 +43,7 @@ export function CustomPrismaAdapter(): Adapter {
         },
       });
 
-      return {
+      const adaptedUser = {
         ...user,
         teams: user.teams.map((membership) => ({
           id: membership.team.id,
@@ -51,9 +52,11 @@ export function CustomPrismaAdapter(): Adapter {
           role: membership.role,
         })),
       };
+
+      return adaptedUser as unknown as AdapterUser;
     },
 
-    getUser: async (id: string): Promise<AdapterUser> => {
+    getUser: async (id: string) => {
       const user = await prisma.user.findUnique({
         where: { id },
         include: {
@@ -65,11 +68,9 @@ export function CustomPrismaAdapter(): Adapter {
         },
       });
 
-      if (!user) {
-        throw new Error('User not found');
-      }
+      if (!user) return null;
 
-      return {
+      const adaptedUser = {
         ...user,
         teams: user.teams.map((membership) => ({
           id: membership.team.id,
@@ -78,9 +79,11 @@ export function CustomPrismaAdapter(): Adapter {
           role: membership.role,
         })),
       };
+
+      return adaptedUser as unknown as AdapterUser;
     },
 
-    getUserByEmail: async (email: string): Promise<AdapterUser> => {
+    getUserByEmail: async (email: string) => {
       const user = await prisma.user.findUnique({
         where: { email },
         include: {
@@ -92,11 +95,9 @@ export function CustomPrismaAdapter(): Adapter {
         },
       });
 
-      if (!user) {
-        throw new Error('User not found');
-      }
+      if (!user) return null;
 
-      return {
+      const adaptedUser = {
         ...user,
         teams: user.teams.map((membership) => ({
           id: membership.team.id,
@@ -105,14 +106,23 @@ export function CustomPrismaAdapter(): Adapter {
           role: membership.role,
         })),
       };
+
+      return adaptedUser as unknown as AdapterUser;
     },
 
-    updateUser: async (data: Partial<User>): Promise<AdapterUser> => {
-      const { id, ...userData } = data;
+    updateUser: async (userData: Partial<AdapterUser> & { id: string }) => {
+      const { id, teams: _, membershipTier, ...restData } = userData;
+
+      const updateData: Prisma.UserUpdateInput = {
+        ...restData,
+        ...(membershipTier && {
+          membershipTier: membershipTier as MembershipTier
+        })
+      };
 
       const user = await prisma.user.update({
-        where: { id: id as string },
-        data: userData as any,
+        where: { id },
+        data: updateData,
         include: {
           teams: {
             include: {
@@ -120,9 +130,9 @@ export function CustomPrismaAdapter(): Adapter {
             },
           },
         },
-      });
+      }) as UserWithTeams;
 
-      return {
+      const adaptedUser = {
         ...user,
         teams: user.teams.map((membership) => ({
           id: membership.team.id,
@@ -131,6 +141,8 @@ export function CustomPrismaAdapter(): Adapter {
           role: membership.role,
         })),
       };
+
+      return adaptedUser as unknown as AdapterUser;
     },
   };
 }

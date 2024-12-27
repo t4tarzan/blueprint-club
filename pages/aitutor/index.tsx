@@ -55,8 +55,8 @@ export default function AITutor() {
         .replace(/([^$])\^(\d+|{[^}]+})/g, '$1$^$2$')
         // Clean up extra whitespace
         .split('\n')
-        .map(line => line.trim())
-        .filter(line => line)
+        .map((line: string) => line.trim())
+        .filter((line: string) => line)
         .join('\n');
 
       setWhiteboardContent(formattedText);
@@ -72,7 +72,7 @@ export default function AITutor() {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayout currentPath="/aitutor">
       <div className="h-screen flex flex-col bg-gradient-to-b from-gray-50 to-gray-100">
         {/* Header */}
         <div className="bg-white shadow-sm flex-none">
