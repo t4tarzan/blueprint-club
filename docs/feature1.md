@@ -15,6 +15,7 @@
 12. [AI Tutor Feature Development Log](#ai-tutor-feature-development-log)
 13. [Version Control Checkpoints](#version-control-checkpoints)
 14. [Type Error Analysis](#type-error-analysis)
+15. [Teaching Mode Enhancement Plan](#teaching-mode-enhancement-plan)
 
 ## Overview
 
@@ -938,3 +939,134 @@ git checkout v1.0.0-type-errors-fixed
 2. Focus on voice interaction improvements
 3. Add more interactive whiteboard features
 4. Implement subject-specific teaching styles
+
+## Teaching Mode Enhancement Plan
+
+### Overview
+Enhancing the AI Tutor with three distinct teaching modes using Gemini Vision API capabilities.
+
+### Teaching Modes
+
+#### 1. Detailed Mode
+Purpose: Provide comprehensive understanding with visual aids
+- Full concept explanations
+- Step-by-step breakdowns
+- Visual diagrams and aids
+- Related examples and concepts
+- Detailed problem-solving approach
+
+#### 2. Quick Mode
+Purpose: Fast problem-solving with essential information
+- Core solution steps
+- Final answers
+- Key formulas
+- Quick visual references
+- Concise explanations
+
+#### 3. Interactive Mode
+Purpose: Dynamic learning with real-time feedback
+- Visual feedback system
+- User input capabilities
+- Dynamic problem-solving
+- Real-time guidance
+- Progress tracking
+
+### Implementation Roadmap
+
+#### Phase 1: Teaching Mode Infrastructure (v1.1.0)
+```markdown
+1. Mode Selection Framework
+   - [ ] TeachingMode enum/type
+   - [ ] Mode selection state
+   - [ ] UI implementation
+   
+2. Mode Components
+   - [ ] DetailedModeComponent
+   - [ ] QuickModeComponent
+   - [ ] InteractiveModeComponent
+   
+3. API Integration
+   - [ ] Mode-specific Gemini calls
+   - [ ] Response handlers
+   - [ ] Custom prompts
+```
+
+#### Phase 2: Visual Integration (v1.2.0)
+```markdown
+1. Gemini Vision Setup
+   - [ ] API integration
+   - [ ] Image utilities
+   - [ ] Storage system
+   
+2. Whiteboard Features
+   - [ ] Drawing canvas
+   - [ ] Tool implementation
+   - [ ] Image display
+   
+3. Visual Feedback
+   - [ ] Feedback component
+   - [ ] Image comparison
+   - [ ] Progress tracking
+```
+
+#### Phase 3: Interactive Features (v1.3.0)
+```markdown
+1. User Input
+   - [ ] Drawing capability
+   - [ ] Handwriting recognition
+   - [ ] File uploads
+   
+2. Feedback System
+   - [ ] Step validation
+   - [ ] Hint system
+   - [ ] Progress tracking
+   
+3. Dynamic Solutions
+   - [ ] Path branching
+   - [ ] Difficulty adjustment
+   - [ ] Analytics
+```
+
+#### Phase 4: Testing & Optimization (v1.4.0)
+```markdown
+1. Testing
+   - [ ] Unit tests
+   - [ ] Integration tests
+   - [ ] Performance tests
+   
+2. Optimization
+   - [ ] Image loading
+   - [ ] Response times
+   - [ ] Caching
+```
+
+### Technical Requirements
+1. Gemini Vision API integration
+2. Canvas/drawing capabilities
+3. Image processing utilities
+4. Real-time feedback system
+5. State management updates
+6. Performance optimization
+
+### Success Metrics
+1. Response time < 2s
+2. Image generation < 3s
+3. User satisfaction > 90%
+4. Error rate < 1%
+5. Feature adoption > 70%
+
+### Development Guidelines
+1. Regular commits with clear messages
+2. Feature flags for gradual rollout
+3. Comprehensive testing
+4. Performance monitoring
+5. User feedback collection
+
+### Rollback Strategy
+Each phase has its own branch and tag:
+```bash
+git checkout v1.x.0  # For major phase rollback
+git checkout v1.x.y  # For feature-specific rollback
+```
+
+This plan will be updated as development progresses.

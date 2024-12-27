@@ -135,6 +135,136 @@ DATABASE_URL=
    - When memory usage becomes high
    - After updating development tools
 
+## Development Plan (Added December 27, 2023)
+
+### Overview
+Planning the enhancement of AI Tutor teaching modes with visual and interactive features using Gemini Vision API.
+
+### Teaching Modes
+1. **Detailed Mode**
+   - Comprehensive explanations
+   - Visual aids and diagrams
+   - Concept definitions
+   - Related examples
+
+2. **Quick Mode**
+   - Core solution steps
+   - Final answer
+   - Essential formulas
+   - Quick visual references
+
+3. **Interactive Mode**
+   - Visual feedback system
+   - User input integration
+   - Dynamic problem solving
+   - Real-time guidance
+
+### Implementation Phases
+
+#### Phase 1: Teaching Mode Infrastructure
+```markdown
+1. Mode Selection Framework
+   - [ ] Create TeachingMode enum/type
+   - [ ] Add mode selection state management
+   - [ ] Implement mode switching UI
+   - [ ] Commit: feat(aitutor): add teaching mode infrastructure
+   
+2. Mode-Specific Components
+   - [ ] Create DetailedModeComponent
+   - [ ] Create QuickModeComponent
+   - [ ] Create InteractiveModeComponent base
+   - [ ] Commit: feat(aitutor): add mode-specific components
+
+3. API Integration Updates
+   - [ ] Update Gemini API calls for mode-specific responses
+   - [ ] Add response type handlers for each mode
+   - [ ] Implement mode-specific prompts
+   - [ ] Commit: feat(api): update Gemini integration for teaching modes
+```
+
+#### Phase 2: Visual Integration
+```markdown
+1. Image Generation Setup
+   - [ ] Add Gemini Vision API integration
+   - [ ] Create image generation utilities
+   - [ ] Set up image caching/storage
+   - [ ] Commit: feat(api): add Gemini Vision integration
+
+2. Whiteboard Enhancements
+   - [ ] Add canvas layer for drawings
+   - [ ] Implement drawing tools
+   - [ ] Add image display capabilities
+   - [ ] Commit: feat(whiteboard): enhance with drawing capabilities
+
+3. Visual Feedback System
+   - [ ] Create visual feedback component
+   - [ ] Implement image comparison logic
+   - [ ] Add progress indicators
+   - [ ] Commit: feat(aitutor): add visual feedback system
+```
+
+#### Phase 3: Interactive Features
+```markdown
+1. User Input System
+   - [ ] Add drawing input capability
+   - [ ] Implement handwriting recognition
+   - [ ] Create file upload system
+   - [ ] Commit: feat(input): add user input capabilities
+
+2. Real-time Feedback
+   - [ ] Implement step validation
+   - [ ] Add hint system
+   - [ ] Create progress tracking
+   - [ ] Commit: feat(feedback): add real-time validation
+
+3. Dynamic Problem Solving
+   - [ ] Create solution path branching
+   - [ ] Implement difficulty adjustment
+   - [ ] Add user progress analytics
+   - [ ] Commit: feat(solving): add dynamic problem solving
+```
+
+#### Phase 4: Testing & Optimization
+```markdown
+1. Unit Tests
+   - [ ] Add tests for each mode
+   - [ ] Test image generation
+   - [ ] Test user input handling
+   - [ ] Commit: test(aitutor): add comprehensive tests
+
+2. Integration Tests
+   - [ ] Test mode switching
+   - [ ] Test API integrations
+   - [ ] Test error handling
+   - [ ] Commit: test(integration): add e2e tests
+
+3. Performance Optimization
+   - [ ] Optimize image loading
+   - [ ] Improve response times
+   - [ ] Add caching mechanisms
+   - [ ] Commit: perf(aitutor): optimize performance
+```
+
+### Git Tagging Strategy
+```bash
+# Major Features
+v1.1.0 - Teaching Mode Infrastructure
+v1.2.0 - Visual Integration
+v1.3.0 - Interactive Features
+v1.4.0 - Testing & Optimization
+
+# Minor Features
+v1.1.1 - Mode Selection
+v1.1.2 - Mode Components
+v1.1.3 - API Updates
+```
+
+### Next Steps
+1. Begin Phase 1 implementation
+2. Set up development branches for each phase
+3. Implement feature flags for gradual rollout
+4. Start with mode selection framework
+
 ## Current Session Summary (December 27, 2023)
 
 ### Session Overview
