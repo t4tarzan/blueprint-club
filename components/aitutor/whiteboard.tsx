@@ -10,15 +10,6 @@ interface WhiteboardProps {
 export const Whiteboard: React.FC<WhiteboardProps> = ({ content, isLoading }) => {
   return (
     <div className="h-full flex flex-col bg-white rounded-lg shadow-lg">
-      {/* Header - Fixed */}
-      <div className="p-4 border-b border-gray-200 flex-none">
-        <div className="flex items-center space-x-2">
-          <div className="h-3 w-3 rounded-full bg-red-500"></div>
-          <div className="h-3 w-3 rounded-full bg-yellow-500"></div>
-          <div className="h-3 w-3 rounded-full bg-green-500"></div>
-        </div>
-      </div>
-
       {/* Content Area - Scrollable */}
       <div className="flex-1 overflow-y-auto p-6">
         <AnimatePresence mode="wait">

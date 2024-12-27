@@ -4,30 +4,19 @@ import { MathRenderer } from './MathRenderer';
 interface HandwrittenTextProps {
   text: string;
   className?: string;
-  color?: string;
-  isStep?: boolean;
+  isMainPoint?: boolean;
 }
 
 export const HandwrittenText: React.FC<HandwrittenTextProps> = ({
   text,
   className = '',
-  color = 'text-gray-800',
-  isStep = false,
+  isMainPoint = false,
 }) => {
-  const stepPrefix = isStep ? '• ' : '';
-  
   const cleanText = (text: string): string => {
-    // Remove markdown code blocks
+    // Remove code block markers and bullet points
     let cleaned = text.replace(/```[^`]*```/g, '');
-    
-    // Remove bullet points, asterisks, and hashes
     cleaned = cleaned.replace(/^[•*#\s]+/gm, '');
-    
-    // Replace "square" with "²" and properly format exponents
-    cleaned = cleaned.replace(/\b(\w+)\s+square\b/gi, '$1²');
-    
-    // Clean up extra whitespace
-    cleaned = cleaned.replace(/\s+/g, ' ').trim();
+    cleaned = cleaned.trim();
     
     // Format equations with proper spacing
     cleaned = cleaned.replace(/([+\-=])/g, ' $1 ').trim();
@@ -57,14 +46,14 @@ export const HandwrittenText: React.FC<HandwrittenTextProps> = ({
 
   return (
     <div 
-      className={`${className} ${color}`}
+      className={`${className} ${isMainPoint ? 'text-blue-600 font-semibold' : 'text-gray-800'}`}
       style={{
         fontFamily: 'Kalam, cursive',
         letterSpacing: '0.5px',
         lineHeight: '1.4'
       }}
     >
-      {stepPrefix}{renderContent()}
+      {renderContent()}
     </div>
   );
 };

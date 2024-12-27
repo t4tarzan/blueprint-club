@@ -55,7 +55,8 @@ export const TeacherCard: React.FC<TeacherCardProps> = ({
       whileHover={{ scale: disabled ? 1 : 1.02 }}
       whileTap={{ scale: disabled ? 1 : 0.98 }}
       className={cn(
-        "w-full h-[450px] rounded-xl cursor-pointer shadow-lg transition-all duration-200 p-1 bg-white/10",
+        "w-[14%] h-[450px] fixed rounded-xl cursor-pointer shadow-lg transition-all duration-200 p-1 bg-white/10",
+        teacher === 'math' ? 'left-[2%] top-[180px]' : 'right-[2%] top-[180px]',
         disabled && 'opacity-50 cursor-not-allowed'
       )}
       onClick={disabled ? undefined : onSelect}

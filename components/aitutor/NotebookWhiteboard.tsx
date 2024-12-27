@@ -11,13 +11,6 @@ interface NotebookWhiteboardProps {
   graphData?: any;
 }
 
-const lineColors = {
-  0: 'text-blue-600',
-  1: 'text-purple-600',
-  2: 'text-green-600',
-  3: 'text-red-600',
-} as const;
-
 export const NotebookWhiteboard: React.FC<NotebookWhiteboardProps> = ({
   content,
   teachingStyle,
@@ -32,13 +25,8 @@ export const NotebookWhiteboard: React.FC<NotebookWhiteboardProps> = ({
     return content
       .split('\n')
       .filter(line => line.trim())
-      .map(line => line.replace(/^[•*#\s]+/, '').trim()); // Remove leading symbols
+      .map(line => line.trim());
   }, [content]);
-
-  const getLineColor = (index: number): string => {
-    const colorIndex = index % Object.keys(lineColors).length;
-    return lineColors[colorIndex as keyof typeof lineColors];
-  };
 
   return (
     <div 
@@ -58,14 +46,13 @@ export const NotebookWhiteboard: React.FC<NotebookWhiteboardProps> = ({
 
       {/* Content Area with custom scrollbar */}
       <div className="w-full h-full px-16 py-4 overflow-y-auto custom-scrollbar">
-        <div className="space-y-2"> {/* Reduced spacing between lines */}
+        <div className="space-y-1"> {/* Tighter spacing between lines */}
           {lines.map((line, index) => (
             <HandwrittenText
               key={index}
               text={line}
-              color={getLineColor(index)}
-              isStep={teachingStyle === 'step-by-step'}
-              className="leading-relaxed" // Adjusted line height
+              isMainPoint={line.toLowerCase().includes('step') || line.toLowerCase().includes('therefore')}
+              className="leading-relaxed"
             />
           ))}
           {isProcessing && (

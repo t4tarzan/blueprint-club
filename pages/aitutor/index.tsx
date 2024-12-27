@@ -12,9 +12,6 @@ export default function AITutor() {
   const [questionsLeft, setQuestionsLeft] = useState(20);
   const [isProcessing, setIsProcessing] = useState(false);
   const [whiteboardContent, setWhiteboardContent] = useState('');
-  const [isGeneratingVoice, setIsGeneratingVoice] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [explanation, setExplanation] = useState<string | null>(null);
   const [graphData, setGraphData] = useState<any>(null);
   const [teachingStyle, setTeachingStyle] = useState<TeachingStyle>('step-by-step');
   const [showTeachingStyles, setShowTeachingStyles] = useState(false);
@@ -29,10 +26,8 @@ export default function AITutor() {
 
     setIsProcessing(true);
     setWhiteboardContent(`Processing your question...\n\n${text}`);
-    setAudioUrl(null);
 
     try {
-      // First get the text response
       const response = await fetch('/api/aitutor/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -48,49 +43,25 @@ export default function AITutor() {
       }
 
       const data = await response.json();
-
-      // Update whiteboard with the response
-      setWhiteboardContent(data.text);
-      setGraphData(data.graphData);
-      setQuestionsLeft(data.questionsLeft);
-
-      // Extract a short summary for voice
-      const summary = data.text
+      
+      // Clean and format the response text
+      const formattedText = data.text
+        // Remove code block markers
+        .replace(/```/g, '')
+        // Remove bullet points and other markers
+        .replace(/^[•*#\s]+/gm, '')
+        // Format math expressions
+        .replace(/\\frac{([^}]*)}{([^}]*)}/g, '$\\frac{$1}{$2}$')
+        .replace(/([^$])\^(\d+|{[^}]+})/g, '$1$^$2$')
+        // Clean up extra whitespace
         .split('\n')
-        .filter((line: string) => line.includes('Final Answer') || line.includes('Therefore'))
+        .map(line => line.trim())
+        .filter(line => line)
         .join('\n');
 
-      setExplanation(summary);
-
-      // Generate voice for the summary
-      if (summary) {
-        setIsGeneratingVoice(true);
-        try {
-          const voiceResponse = await fetch('/api/aitutor/voice', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              text: summary,
-              teacher: selectedTeacher 
-            }),
-          });
-
-          if (!voiceResponse.ok) {
-            const errorData = await voiceResponse.json();
-            console.error('Voice generation failed:', errorData);
-            throw new Error(errorData.details || 'Failed to generate voice');
-          }
-
-          const voiceData = await voiceResponse.json();
-          setAudioUrl(voiceData.audioUrl);
-        } catch (error) {
-          console.error('Voice error:', error);
-          setWhiteboardContent(prev => 
-            prev + '\n\nNote: Voice generation failed. You can still read the explanation above.');
-        } finally {
-          setIsGeneratingVoice(false);
-        }
-      }
+      setWhiteboardContent(formattedText);
+      setGraphData(data.graphData);
+      setQuestionsLeft(data.questionsLeft);
 
     } catch (error) {
       console.error('Error:', error);
@@ -101,7 +72,7 @@ export default function AITutor() {
   };
 
   return (
-    <DashboardLayout currentPath="/aitutor">
+    <DashboardLayout>
       <div className="h-screen flex flex-col bg-gradient-to-b from-gray-50 to-gray-100">
         {/* Header */}
         <div className="bg-white shadow-sm flex-none">
@@ -151,23 +122,15 @@ export default function AITutor() {
           <div className="max-w-[1600px] mx-auto h-full px-4 sm:px-6 lg:px-8 py-6">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
               {/* Left Tutor */}
-              <div className="lg:col-span-3 h-[calc(100vh-16rem)]">
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <TeacherCard
-                    teacher="math"
-                    isSelected={selectedTeacher === 'math'}
-                    onSelect={() => setSelectedTeacher('math')}
-                    disabled={isProcessing}
-                  />
-                </motion.div>
-              </div>
+              <TeacherCard
+                teacher="math"
+                isSelected={selectedTeacher === 'math'}
+                onSelect={() => setSelectedTeacher('math')}
+                disabled={isProcessing}
+              />
               
               {/* Center Whiteboard */}
-              <div className="lg:col-span-6 h-[calc(100vh-16rem)] flex flex-col relative">
+              <div className="lg:col-span-8 lg:col-start-3 h-[calc(100vh-16rem)] flex flex-col relative">
                 {!selectedTeacher && (
                   <motion.div 
                     className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-lg border-2 border-dashed border-gray-200"
@@ -199,34 +162,19 @@ export default function AITutor() {
                     <VoiceStreaming
                       isActive={true}
                       onTranscript={handleTranscript}
-                      disabled={isProcessing || isGeneratingVoice}
+                      disabled={isProcessing}
                     />
-                    {audioUrl && (
-                      <audio
-                        src={audioUrl}
-                        controls
-                        className="w-full mt-4"
-                      />
-                    )}
                   </div>
                 )}
               </div>
 
               {/* Right Tutor */}
-              <div className="lg:col-span-3 h-[calc(100vh-16rem)]">
-                <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <TeacherCard
-                    teacher="science"
-                    isSelected={selectedTeacher === 'science'}
-                    onSelect={() => setSelectedTeacher('science')}
-                    disabled={isProcessing}
-                  />
-                </motion.div>
-              </div>
+              <TeacherCard
+                teacher="science"
+                isSelected={selectedTeacher === 'science'}
+                onSelect={() => setSelectedTeacher('science')}
+                disabled={isProcessing}
+              />
             </div>
           </div>
         </div>
