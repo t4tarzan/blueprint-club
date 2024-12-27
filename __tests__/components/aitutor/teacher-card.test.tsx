@@ -1,45 +1,78 @@
 import { render, screen } from '@testing-library/react';
-import { TeacherCard } from '@/components/aitutor/teacher-card';
 import userEvent from '@testing-library/user-event';
+import { TeacherCard } from '@/components/aitutor/teacher-card';
 
 describe('TeacherCard', () => {
-  const defaultProps = {
-    teacher: 'math' as const,
-    isSelected: false,
-    isCallActive: false,
-    onClick: jest.fn(),
-  };
+  const mockOnSelect = jest.fn();
 
-  it('renders math teacher correctly', () => {
-    render(<TeacherCard {...defaultProps} />);
-    expect(screen.getByText('Mr. David')).toBeInTheDocument();
-    expect(screen.getByText('Math Teacher')).toBeInTheDocument();
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  it('renders science teacher correctly', () => {
-    render(<TeacherCard {...defaultProps} teacher="science" />);
+  it('renders math teacher card correctly', () => {
+    render(
+      <TeacherCard
+        teacher="math"
+        isSelected={false}
+        onSelect={mockOnSelect}
+        disabled={false}
+      />
+    );
+    expect(screen.getByText('Mr. David')).toBeInTheDocument();
+    expect(screen.getByText('Mathematics')).toBeInTheDocument();
+  });
+
+  it('renders science teacher card correctly', () => {
+    render(
+      <TeacherCard
+        teacher="science"
+        isSelected={false}
+        onSelect={mockOnSelect}
+        disabled={false}
+      />
+    );
     expect(screen.getByText('Ms. Sarah')).toBeInTheDocument();
-    expect(screen.getByText('Science Teacher')).toBeInTheDocument();
+    expect(screen.getByText('Science')).toBeInTheDocument();
   });
 
   it('handles click events', async () => {
-    const onClick = jest.fn();
-    render(<TeacherCard {...defaultProps} onClick={onClick} />);
-    const card = screen.getByRole('button');
-    await userEvent.click(card);
-    expect(onClick).toHaveBeenCalled();
+    const user = userEvent.setup();
+    render(
+      <TeacherCard
+        teacher="math"
+        isSelected={false}
+        onSelect={mockOnSelect}
+        disabled={false}
+      />
+    );
+    await user.click(screen.getByRole('button'));
+    expect(mockOnSelect).toHaveBeenCalledTimes(1);
   });
 
-  it('shows selected state correctly', () => {
-    render(<TeacherCard {...defaultProps} isSelected={true} />);
-    const card = screen.getByRole('button');
-    expect(card).toHaveClass('scale-105');
+  it('shows selected state', () => {
+    render(
+      <TeacherCard
+        teacher="math"
+        isSelected={true}
+        onSelect={mockOnSelect}
+        disabled={false}
+      />
+    );
+    expect(screen.getByText('Currently Selected')).toBeInTheDocument();
   });
 
-  it('shows speaking indicator when selected and call is active', () => {
-    render(<TeacherCard {...defaultProps} isSelected={true} isCallActive={true} />);
-    const indicator = screen.getByTestId('speaking-indicator');
-    expect(indicator).toBeInTheDocument();
-    expect(indicator).toHaveClass('text-green-600');
+  it('handles disabled state', async () => {
+    const user = userEvent.setup();
+    render(
+      <TeacherCard
+        teacher="math"
+        isSelected={false}
+        onSelect={mockOnSelect}
+        disabled={true}
+      />
+    );
+    await user.click(screen.getByRole('button'));
+    expect(mockOnSelect).not.toHaveBeenCalled();
+    expect(screen.getByRole('button')).toHaveClass('cursor-not-allowed');
   });
 });

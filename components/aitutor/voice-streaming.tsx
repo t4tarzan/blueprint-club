@@ -9,13 +9,27 @@ interface VoiceStreamingProps {
 export function VoiceStreaming({ onTranscript, isActive }: VoiceStreamingProps) {
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
-      // @ts-ignore
-      const recognition = new webkitSpeechRecognition();
-      recognition.continuous = true;
+    if (typeof window !== 'undefined') {
+      // Check for browser support
+      const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
+      
+      if (!SpeechRecognition) {
+        setError('Speech recognition is not supported in this browser.');
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
       recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        setError(null);
+      };
 
       recognition.onresult = (event: any) => {
         const transcript = Array.from(event.results)
@@ -26,12 +40,14 @@ export function VoiceStreaming({ onTranscript, isActive }: VoiceStreamingProps) 
         if (event.results[0].isFinal) {
           onTranscript(transcript);
           recognition.stop();
-          setIsListening(false);
         }
       };
 
       recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
+        setError(event.error === 'not-allowed' 
+          ? 'Please allow microphone access to use voice input.'
+          : 'An error occurred with speech recognition.');
         setIsListening(false);
       };
 
@@ -49,35 +65,37 @@ export function VoiceStreaming({ onTranscript, isActive }: VoiceStreamingProps) 
     };
   }, [onTranscript]);
 
-  useEffect(() => {
-    if (!isActive && isListening && recognition) {
-      recognition.stop();
-      setIsListening(false);
-    }
-  }, [isActive, isListening, recognition]);
-
-  const toggleListening = useCallback(() => {
+  const toggleListening = useCallback(async () => {
     if (!recognition) return;
 
-    if (!isListening) {
-      recognition.start();
-      setIsListening(true);
-    } else {
-      recognition.stop();
+    try {
+      if (!isListening) {
+        // Request microphone permission
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        recognition.start();
+      } else {
+        recognition.stop();
+      }
+    } catch (err) {
+      setError('Please allow microphone access to use voice input.');
       setIsListening(false);
     }
   }, [recognition, isListening]);
 
-  if (!recognition) {
-    return <div>Speech recognition not supported in this browser.</div>;
+  if (error) {
+    return (
+      <div className="flex items-center justify-center space-x-2 text-red-500">
+        <span className="text-sm">{error}</span>
+      </div>
+    );
   }
 
   return (
-    <div className="flex items-center justify-center space-x-2">
+    <div className="flex items-center justify-center space-x-3 bg-white p-4 rounded-lg shadow-sm">
       <div className={`w-3 h-3 rounded-full transition-colors duration-200 ${
         isListening ? 'bg-red-500 animate-pulse' : 'bg-gray-300'
       }`} />
-      <span className="text-sm text-gray-600">
+      <span className="text-sm text-gray-600 min-w-[100px]">
         {isListening ? 'Listening...' : 'Click to speak'}
       </span>
       <Button
@@ -85,6 +103,7 @@ export function VoiceStreaming({ onTranscript, isActive }: VoiceStreamingProps) 
         disabled={!isActive}
         variant={isListening ? "destructive" : "default"}
         size="sm"
+        className="min-w-[80px]"
       >
         {isListening ? 'Stop' : 'Start'}
       </Button>

@@ -105,50 +105,86 @@ export default function AITutor() {
       <div className="h-screen flex flex-col bg-gradient-to-b from-gray-50 to-gray-100">
         {/* Header */}
         <div className="bg-white shadow-sm flex-none">
-          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-2">
+          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               {/* Progress meter */}
-              <div className="flex items-center space-x-2">
-                <div className="text-sm font-semibold text-gray-600">Progress</div>
-                <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-500 rounded-full transition-all duration-500"
-                    style={{ width: `${(20 - questionsLeft) * 5}%` }}
+              <div className="flex items-center space-x-3">
+                <div className="text-sm font-medium text-gray-700">Questions</div>
+                <div className="w-40 h-3 bg-gray-100 rounded-full overflow-hidden border border-gray-200">
+                  <motion.div 
+                    className="h-full bg-blue-500 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(20 - questionsLeft) * 5}%` }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
                   />
                 </div>
-                <div className="text-xs text-gray-500">
-                  {questionsLeft} left
+                <div className="text-sm text-gray-600 font-medium">
+                  {questionsLeft} remaining
                 </div>
               </div>
 
               {/* Teaching Style Selector */}
-              <TeachingStyleSelector
-                selectedStyle={teachingStyle}
-                onStyleSelect={handleTeachingStyleChange}
-              />
+              <AnimatePresence>
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                >
+                  <TeachingStyleSelector
+                    selectedStyle={teachingStyle}
+                    onStyleSelect={handleTeachingStyleChange}
+                  />
+                </motion.div>
+              </AnimatePresence>
 
-              {/* Right side: Empty for balance */}
-              <div className="w-32"></div>
+              {/* Session Info */}
+              <div className="flex items-center space-x-2">
+                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-sm text-gray-600">Session Active</span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Main Content */}
         <div className="flex-1 overflow-hidden">
-          <div className="max-w-[1600px] mx-auto h-full px-4 sm:px-6 lg:px-8 py-8">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-full">
+          <div className="max-w-[1600px] mx-auto h-full px-4 sm:px-6 lg:px-8 py-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
               {/* Left Tutor */}
               <div className="lg:col-span-3 h-[calc(100vh-16rem)]">
-                <TeacherCard
-                  teacher="math"
-                  isSelected={selectedTeacher === 'math'}
-                  onSelect={() => setSelectedTeacher('math')}
-                  disabled={false}
-                />
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <TeacherCard
+                    teacher="math"
+                    isSelected={selectedTeacher === 'math'}
+                    onSelect={() => setSelectedTeacher('math')}
+                    disabled={isProcessing}
+                  />
+                </motion.div>
               </div>
               
               {/* Center Whiteboard */}
-              <div className="lg:col-span-6 h-[calc(100vh-16rem)] flex flex-col">
+              <div className="lg:col-span-6 h-[calc(100vh-16rem)] flex flex-col relative">
+                {!selectedTeacher && (
+                  <motion.div 
+                    className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-lg border-2 border-dashed border-gray-200"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <div className="text-center p-8">
+                      <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                        Welcome to AI Tutor! 👋
+                      </h3>
+                      <p className="text-gray-600 max-w-md">
+                        Select a teacher to start your learning journey. Choose Math for mathematical concepts or Science for scientific exploration.
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
                 <div className="flex-1 min-h-0">
                   <NotebookWhiteboard
                     content={whiteboardContent}
@@ -178,12 +214,18 @@ export default function AITutor() {
 
               {/* Right Tutor */}
               <div className="lg:col-span-3 h-[calc(100vh-16rem)]">
-                <TeacherCard
-                  teacher="science"
-                  isSelected={selectedTeacher === 'science'}
-                  onSelect={() => setSelectedTeacher('science')}
-                  disabled={false}
-                />
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <TeacherCard
+                    teacher="science"
+                    isSelected={selectedTeacher === 'science'}
+                    onSelect={() => setSelectedTeacher('science')}
+                    disabled={isProcessing}
+                  />
+                </motion.div>
               </div>
             </div>
           </div>
