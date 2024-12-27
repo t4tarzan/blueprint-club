@@ -265,6 +265,97 @@ v1.1.3 - API Updates
 3. Implement feature flags for gradual rollout
 4. Start with mode selection framework
 
+## Session Summary - AI Tutor Response Processing
+
+## Overview
+During this session, we significantly improved the AI Tutor's response processing to ensure consistent display of all sections: steps, visual (graphs), practice problems, and concepts.
+
+## Key Changes Made
+
+### 1. Centralized Response Handler
+Created `/lib/response-handler.ts`:
+```typescript
+// Main response processing functions
+extractJsonFromResponse(text: string): ParsedResponse
+formatSteps(data: ParsedResponse): string
+formatVisual(data: ParsedResponse): VisualData
+formatPractice(data: ParsedResponse): string
+formatConcepts(data: ParsedResponse): string
+```
+
+### 2. Improved Prompt Template
+Updated `/pages/api/aitutor/process.ts` with a clearer prompt:
+```typescript
+const prompt = `
+{
+  "steps": "Numbered step-by-step explanation",
+  "visual": {
+    "type": "function",
+    "data": {
+      "function": "sin(x)",  // Simple JavaScript notation
+      "domain": [-10, 10]
+    }
+  },
+  // ... other sections
+}
+`;
+```
+
+### 3. Mathematical Function Handling
+- Simple JavaScript notation (e.g., `sin(2*x + 1)`)
+- Automatic conversion to Math functions
+- Proper domain specification
+
+## Testing Results
+1. Steps section: 
+2. Visual section: 
+3. Practice section: 
+4. Concepts section: 
+
+## Next Steps
+1. Add more mathematical functions
+2. Enhance graph customization
+3. Add interactive practice features
+4. Implement solution checking
+
+## Code Snippets for Reference
+
+### Response Processing
+```typescript
+export function processAIResponse(rawResponse: string, question: string): WhiteboardContent {
+  const parsedData = extractJsonFromResponse(rawResponse);
+  return {
+    steps: `Your Question: ${question}\n\n${formatSteps(parsedData)}`,
+    visual: formatVisual(parsedData),
+    practice: formatPractice(parsedData),
+    concepts: formatConcepts(parsedData)
+  };
+}
+```
+
+### Visual Function Formatting
+```typescript
+const jsFunction = data.visual.data.function
+  .replace(/sin/gi, 'Math.sin')
+  .replace(/cos/gi, 'Math.cos')
+  .replace(/tan/gi, 'Math.tan')
+  .replace(/abs/gi, 'Math.abs')
+  .replace(/\^/g, '**')
+  .replace(/pi/gi, 'Math.PI');
+```
+
+## Important Notes
+1. Always maintain the exact JSON structure in prompts
+2. Use simple JavaScript notation for functions
+3. Include all sections in the response
+4. Handle errors gracefully with fallbacks
+
+## Dependencies
+- Google Generative AI (Gemini)
+- Chart.js for graphs
+- Next.js
+- TypeScript
+
 ## Current Session Summary (December 27, 2023)
 
 ### Session Overview

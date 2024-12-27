@@ -1,31 +1,54 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { TeacherCard } from '@/components/aitutor/teacher-card';
 import { VoiceStreaming } from '@/components/aitutor/voice-streaming';
-import { useSession } from 'next-auth/react';
 import { NotebookWhiteboard } from '@/components/aitutor/NotebookWhiteboard';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { TeachingStyleSelector, TeachingStyle } from '@/components/aitutor/TeachingStyle';
+import { TeachingStyleSelector } from '@/components/aitutor/TeachingStyleSelector';
+import type { WhiteboardContent, TeachingStyle, ContentSection, FunctionGraphData } from '@/types/aitutor';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { NextPage } from 'next';
+import { processAIResponse } from '@/lib/response-handler';
 
-export default function AITutor() {
+const defaultVisualData: FunctionGraphData = {
+  type: 'function',
+  data: {
+    function: 'x',
+    domain: [-10, 10]
+  }
+};
+
+const AITutorPage: NextPage = () => {
   const [selectedTeacher, setSelectedTeacher] = useState<'math' | 'science' | null>(null);
   const [questionsLeft, setQuestionsLeft] = useState(20);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [whiteboardContent, setWhiteboardContent] = useState('');
-  const [graphData, setGraphData] = useState<any>(null);
+  const [whiteboardContent, setWhiteboardContent] = useState<WhiteboardContent>({
+    steps: '',
+    visual: defaultVisualData,
+    practice: '',
+    concepts: ''
+  });
   const [teachingStyle, setTeachingStyle] = useState<TeachingStyle>('step-by-step');
-  const [showTeachingStyles, setShowTeachingStyles] = useState(false);
+  const [activeSection, setActiveSection] = useState<ContentSection>('steps');
 
   const handleTeachingStyleChange = (style: TeachingStyle) => {
     setTeachingStyle(style);
-    setShowTeachingStyles(false);
+    if (style === 'step-by-step') {
+      setActiveSection('steps');
+    }
+  };
+
+  const handleFeatureSelect = (feature: ContentSection) => {
+    setActiveSection(feature);
   };
 
   const handleTranscript = async (text: string) => {
     if (!selectedTeacher) return;
 
     setIsProcessing(true);
-    setWhiteboardContent(`Processing your question...\n\n${text}`);
+    setWhiteboardContent(prev => ({
+      ...prev,
+      steps: `Your Question: ${text}\n\nThinking...`
+    }));
 
     try {
       const response = await fetch('/api/aitutor/process', {
@@ -43,29 +66,25 @@ export default function AITutor() {
       }
 
       const data = await response.json();
+      console.log('API response:', data);
+
+      const formattedContent = processAIResponse(data.steps, text);
+      console.log('Formatted content:', formattedContent);
       
-      // Clean and format the response text
-      const formattedText = data.text
-        // Remove code block markers
-        .replace(/```/g, '')
-        // Remove bullet points and other markers
-        .replace(/^[•*#\s]+/gm, '')
-        // Format math expressions
-        .replace(/\\frac{([^}]*)}{([^}]*)}/g, '$\\frac{$1}{$2}$')
-        .replace(/([^$])\^(\d+|{[^}]+})/g, '$1$^$2$')
-        // Clean up extra whitespace
-        .split('\n')
-        .map((line: string) => line.trim())
-        .filter((line: string) => line)
-        .join('\n');
-
-      setWhiteboardContent(formattedText);
-      setGraphData(data.graphData);
-      setQuestionsLeft(data.questionsLeft);
-
+      setWhiteboardContent(formattedContent);
+      
+      if (typeof data.questionsLeft === 'number') {
+        setQuestionsLeft(data.questionsLeft);
+      }
     } catch (error) {
       console.error('Error:', error);
-      setWhiteboardContent('Sorry, there was an error processing your request.');
+      setWhiteboardContent(prev => ({
+        ...prev,
+        steps: `Your Question: ${text}\n\nSorry, there was an error processing your request.`,
+        visual: defaultVisualData,
+        practice: '',
+        concepts: ''
+      }));
     } finally {
       setIsProcessing(false);
     }
@@ -95,14 +114,24 @@ export default function AITutor() {
               </div>
 
               {/* Teaching Style Selector */}
-              <TeachingStyleSelector
-                selectedStyle={teachingStyle}
-                onStyleSelect={handleTeachingStyleChange}
-              />
+              <AnimatePresence>
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                >
+                  <TeachingStyleSelector
+                    selectedStyle={teachingStyle}
+                    onStyleSelect={handleTeachingStyleChange}
+                    onFeatureSelect={handleFeatureSelect}
+                    selectedFeature={activeSection}
+                  />
+                </motion.div>
+              </AnimatePresence>
 
               {/* Session Status */}
               <div className="flex items-center space-x-2">
-                <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                 <span className="text-sm text-gray-600 font-medium">Session Active</span>
               </div>
             </div>
@@ -127,10 +156,9 @@ export default function AITutor() {
               <div className="flex-1 flex flex-col min-w-0">
                 <NotebookWhiteboard
                   content={whiteboardContent}
-                  teachingStyle={teachingStyle}
                   isProcessing={isProcessing}
-                  selectedSubject={selectedTeacher}
-                  graphData={graphData}
+                  activeSection={activeSection}
+                  teachingStyle={teachingStyle}
                 />
               </div>
 
@@ -160,4 +188,6 @@ export default function AITutor() {
       </div>
     </DashboardLayout>
   );
-}
+};
+
+export default AITutorPage;

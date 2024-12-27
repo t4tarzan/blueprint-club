@@ -87,51 +87,103 @@ export default async function handler(
       }
     }
 
-    const prompt = `You are an AI ${subject} tutor. A student has asked: "${text}"
-    Please explain the concept in a ${teachingStyle} manner.
-    
-    If the answer involves mathematical equations, use LaTeX notation.
-    If the answer would benefit from a graph, include it in the following format:
-    [GRAPH_DATA]
+    const prompt = `You are an expert ${subject} tutor. A student has asked: "${text}"
+
+    Format your response as a JSON object with these EXACT sections:
     {
-      "type": "line|bar|scatter",
-      "labels": ["x1", "x2", ...],
-      "datasets": [{
-        "label": "Dataset Label",
-        "data": [y1, y2, ...],
-        "borderColor": "rgb(75, 192, 192)",
-        "backgroundColor": "rgba(75, 192, 192, 0.5)"
-      }],
-      "options": {
-        "xAxisLabel": "X Axis",
-        "yAxisLabel": "Y Axis"
+      "steps": "Provide a clear step-by-step solution here. Break down the explanation into numbered steps.",
+      
+      "visual": {
+        "type": "function",
+        "data": {
+          "function": "sin(x)",  // Use simple JavaScript notation (sin, cos, abs)
+          "domain": [-10, 10]    // Specify appropriate domain
+        }
+      },
+      
+      "practice": {
+        "problems": [
+          {
+            "question": "A similar but different practice problem",
+            "difficulty": "easy|medium|hard",
+            "solution": "Step-by-step solution to the practice problem"
+          }
+        ]
+      },
+      
+      "concepts": {
+        "title": "Main concept or topic",
+        "description": "Brief overview of the key concept",
+        "relatedTopics": [
+          {
+            "name": "Related concept name",
+            "description": "How this concept connects to the main topic"
+          }
+        ]
       }
     }
-    [/GRAPH_DATA]`;
+
+    Important Instructions:
+    1. Return ONLY the JSON object above, no other text or markers
+    2. For mathematical functions:
+       - Use simple JavaScript notation (sin, cos, abs)
+       - Do NOT include Math. prefix
+       - Example: sin(2*x + 1) not Math.sin(2*x + 1)
+    3. Keep explanations clear and concise
+    4. Always include all sections
+    5. For step-by-step explanations, use numbers (1., 2., etc.)
+    6. Make sure the JSON is valid and properly formatted`;
+
+    console.log('Sending prompt to Gemini:', prompt);
 
     try {
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const text_response = response.text();
+      console.log('Raw Gemini response:', text_response); // Debug log
 
-      // Extract any graph data if present
-      const graphData = extractGraphData(text_response);
-      
-      // Remove the graph data from the text if it exists
-      const cleanedText = text_response.replace(/\[GRAPH_DATA\][\s\S]*?\[\/GRAPH_DATA\]/g, '');
-      
-      const finalResponse = {
-        text: cleanResponse(cleanedText),
-        graphData: graphData,
-        questionsLeft
-      };
+      try {
+        // Parse the JSON response
+        const jsonResponse = JSON.parse(text_response);
+        console.log('Parsed response:', jsonResponse);
 
-      res.status(200).json(finalResponse);
+        // Extract the actual response from the JSON string in steps
+        let parsedData = jsonResponse;
+        if (typeof jsonResponse.steps === 'string' && jsonResponse.steps.includes('Here\'s what I understood:')) {
+          try {
+            const match = jsonResponse.steps.match(/```json\n([\s\S]*?)\n```/);
+            if (match) {
+              const innerJson = JSON.parse(match[1]);
+              parsedData = {
+                ...innerJson,
+                questionsLeft
+              };
+            }
+          } catch (innerParseError) {
+            console.error('Failed to parse inner JSON:', innerParseError);
+          }
+        }
+
+        return res.status(200).json(parsedData);
+      } catch (parseError) {
+        console.error('Failed to parse JSON response:', parseError);
+        console.error('Raw text causing parse error:', text_response);
+        // Fallback to text response if JSON parsing fails
+        return res.status(200).json({
+          steps: cleanResponse(text_response),
+          visual: null,
+          practice: '',
+          concepts: '',
+          questionsLeft
+        });
+      }
     } catch (aiError: any) {
       console.error('AI Generation Error:', aiError);
+      console.error('Full error details:', aiError); // Debug log
       res.status(500).json({ 
         error: 'Failed to generate AI response',
-        details: aiError.message 
+        details: aiError.message,
+        steps: 'Sorry, I had trouble understanding that. Could you rephrase your question?'
       });
     }
   } catch (error: any) {

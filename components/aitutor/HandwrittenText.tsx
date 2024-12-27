@@ -1,59 +1,76 @@
 import React from 'react';
-import { MathRenderer } from './MathRenderer';
+import { motion } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 
 interface HandwrittenTextProps {
   text: string;
+  speed?: number;
   className?: string;
-  isMainPoint?: boolean;
 }
 
 export const HandwrittenText: React.FC<HandwrittenTextProps> = ({
   text,
-  className = '',
-  isMainPoint = false,
+  speed = 30,
+  className = ''
 }) => {
-  const cleanText = (text: string): string => {
-    // Remove code block markers and bullet points
-    let cleaned = text.replace(/```[^`]*```/g, '');
-    cleaned = cleaned.replace(/^[•*#\s]+/gm, '');
-    cleaned = cleaned.trim();
-    
-    // Format equations with proper spacing
-    cleaned = cleaned.replace(/([+\-=])/g, ' $1 ').trim();
-    
-    return cleaned;
+  const formatLine = (line: string) => {
+    // Check for headings (lines starting with 'Step', 'Question:', etc.)
+    if (line.match(/^(Step \d+:|Question:|Visual Aid:|Practice Problems:|Key Concepts:)/)) {
+      return `<span class="text-blue-600 font-semibold">${line}</span>`;
+    }
+    // Check for bullet points
+    if (line.startsWith('•')) {
+      return `<span class="text-gray-800">${line}</span>`;
+    }
+    // Check for numbered items
+    if (line.match(/^\d+\./)) {
+      return `<span class="text-gray-800">${line}</span>`;
+    }
+    return line;
   };
 
-  // Function to parse text and identify math expressions
-  const renderContent = () => {
-    const parts = cleanText(text).split(/(\$.*?\$)/g);
-    return parts.map((part, index) => {
-      if (part.startsWith('$') && part.endsWith('$')) {
-        // Remove the $ symbols and render as math
-        const mathContent = part.slice(1, -1);
-        return (
-          <MathRenderer
-            key={index}
-            math={mathContent}
-            inline={true}
-            className="mx-1"
-          />
-        );
-      }
-      return <span key={index}>{part}</span>;
-    });
-  };
+  const lines = text.split('\n');
 
   return (
     <div 
-      className={`${className} ${isMainPoint ? 'text-blue-600 font-semibold' : 'text-gray-800'}`}
+      className={className}
       style={{
         fontFamily: 'Kalam, cursive',
         letterSpacing: '0.5px',
         lineHeight: '1.4'
       }}
     >
-      {renderContent()}
+      {lines.map((line, index) => (
+        <motion.div
+          key={index}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{
+            duration: 0.5,
+            delay: index * (speed / 1000),
+            ease: 'easeOut'
+          }}
+          className="font-handwritten"
+        >
+          <ReactMarkdown
+            remarkPlugins={[remarkMath]}
+            rehypePlugins={[rehypeKatex]}
+            components={{
+              p: ({ children }) => (
+                <div 
+                  dangerouslySetInnerHTML={{ 
+                    __html: formatLine(children.toString()) 
+                  }} 
+                />
+              ),
+            }}
+          >
+            {line || '\u00A0'}
+          </ReactMarkdown>
+        </motion.div>
+      ))}
     </div>
   );
 };

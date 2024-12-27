@@ -288,56 +288,125 @@ npx prisma migrate to previous_migration_name
 ## AI Tutor Feature Implementation
 
 ### Overview
-The AI Tutor feature provides an interactive learning experience with two specialized AI tutors - one for Mathematics and one for Science.
+The AI Tutor feature provides an interactive learning experience using Google's Gemini AI model. It processes user questions and returns structured responses with explanations, visualizations, practice problems, and related concepts.
 
-### Components
+## Key Components
 
-#### 1. Layout Structure
-- Uses `DashboardLayout` with white navbar for consistent dashboard experience
-- Responsive grid layout with:
-  - Left teacher card (1/4 width)
-  - Central whiteboard (2/4 width)
-  - Right teacher card (1/4 width)
+### 1. Response Structure
+The AI response is structured in a consistent JSON format:
+```json
+{
+  "steps": "Numbered step-by-step explanation",
+  "visual": {
+    "type": "function",
+    "data": {
+      "function": "sin(x)",  // Simple JavaScript notation
+      "domain": [-10, 10]
+    }
+  },
+  "practice": {
+    "problems": [
+      {
+        "question": "Practice problem",
+        "difficulty": "easy|medium|hard",
+        "solution": "Step-by-step solution"
+      }
+    ]
+  },
+  "concepts": {
+    "title": "Main concept",
+    "description": "Concept overview",
+    "relatedTopics": [
+      {
+        "name": "Related topic",
+        "description": "Connection to main topic"
+      }
+    ]
+  }
+}
+```
 
-#### 2. TeacherCard Component (`components/aitutor/teacher-card.tsx`)
-- Displays tutor information and image
-- Features:
-  - Hover animations with gradient backgrounds
-  - Optimized image loading with fallback to DiceBear avatars
-  - Custom image positioning for each tutor
-  - Interactive selection state
+### 2. Response Processing Pipeline
+- `response-handler.ts`: Centralizes all response processing
+  - Extracts and validates JSON content
+  - Formats each section (steps, visual, practice, concepts)
+  - Provides fallback values for missing sections
+  - Handles mathematical function notation conversion
 
-#### 3. Whiteboard Component (`components/aitutor/whiteboard.tsx`)
-- Central interactive area for tutoring sessions
-- Features:
-  - Mac-style window controls
-  - Loading animations
-  - Markdown content rendering
-  - Empty state with helpful message
+### 3. Mathematical Function Handling
+- Functions use simple JavaScript notation (e.g., `sin(2*x + 1)`)
+- Automatic conversion to JavaScript Math functions
+- Supported functions: sin, cos, tan, abs
+- Domain specification for proper graph rendering
 
-#### 4. Voice Streaming Component (`components/aitutor/voice-streaming.tsx`)
-- Handles audio interaction between student and AI tutor
+### 4. Error Handling
+- Validates JSON structure
+- Provides fallbacks for missing sections
+- Logs processing steps for debugging
+- User-friendly error messages
 
-### Styling Details
-- Teacher Cards:
-  - Math Teacher (Mr. David):
-    - Blue gradient theme
-    - Custom image positioning with horizontal flip
-  - Science Teacher (Ms. Sarah):
-    - Purple gradient theme
-    - Centered image positioning
+## Implementation Details
 
-### Assets
-- Teacher Images:
-  - Math Tutor: `/public/images/avatars/math-tutor.jpg`
-  - Science Tutor: `/public/images/avatars/science-tutor.jpg`
-  - Fallback: DiceBear avatars with themed backgrounds
+### Files Modified
+1. `/lib/response-handler.ts`
+   - New centralized response processing
+   - Type definitions for response structure
+   - Section-specific formatters
 
-### Future Improvements
-1. Add session progress tracking
-2. Implement voice interaction
-3. Add subject-specific tools and visualizations
-4. Save and resume session functionality
+2. `/pages/api/aitutor/process.ts`
+   - Updated prompt template
+   - Improved response handling
+   - Better error logging
+
+3. `/pages/aitutor/index.tsx`
+   - Simplified response processing
+   - Uses centralized response handler
+   - Better state management
+
+### Key Functions
+1. `processAIResponse`: Main entry point for response processing
+2. `extractJsonFromResponse`: Safely extracts JSON from response
+3. `formatVisual`: Handles mathematical function conversion
+4. `formatPractice`: Structures practice problems
+5. `formatConcepts`: Organizes concept information
+
+## Best Practices
+1. **Response Format**
+   - Always return clean JSON
+   - Include all sections
+   - Use simple JavaScript notation for functions
+   - Number steps clearly
+
+2. **Error Handling**
+   - Validate all sections
+   - Provide fallbacks
+   - Log processing steps
+   - Show user-friendly messages
+
+3. **Mathematical Functions**
+   - Use simple notation (sin, cos, abs)
+   - Don't include Math. prefix
+   - Specify appropriate domains
+   - Handle function conversion safely
+
+## Future Improvements
+1. Add support for more mathematical functions
+2. Enhance graph customization options
+3. Implement interactive practice problems
+4. Add solution validation
+5. Support multiple visualization types
+
+## Dependencies
+- Google Generative AI (Gemini)
+- Chart.js for visualization
+- Next.js for API routes
+- TypeScript for type safety
+
+## Security Considerations
+- API key management
+- Input validation
+- Response sanitization
+- Error message security
 
 ## AI Tutor Feature Development Log
 
@@ -537,6 +606,73 @@ To rollback to a specific version:
       └── science-teacher.svg
 ```
 
+## Checkpoints
+
+### Checkpoint 21 (December 28, 2023) - Response Processing Working State
+**Status**: Stable, All Features Working
+
+#### Working Features
+1. Response Processing
+   - Clean JSON response format
+   - All sections displaying correctly (steps, visual, practice, concepts)
+   - Mathematical function graphing
+   - Error handling with fallbacks
+
+#### Key Files and States
+1. `/lib/response-handler.ts`
+   - Centralized response processing
+   - JSON extraction and validation
+   - Section-specific formatters
+
+2. `/pages/api/aitutor/process.ts`
+   - Updated prompt template
+   - Clean JSON structure
+   - Mathematical function handling
+
+3. `/pages/aitutor/index.tsx`
+   - Uses centralized response handler
+   - Proper state management
+   - Error handling
+
+#### Rollback Instructions
+To restore to this working state:
+```bash
+# Create a tag for this stable state
+git tag v1.0.0-response-processing-stable
+
+# To rollback to this state later:
+git checkout v1.0.0-response-processing-stable
+
+# Verify these files are in the correct state:
+# - /lib/response-handler.ts
+# - /pages/api/aitutor/process.ts
+# - /pages/aitutor/index.tsx
+```
+
+#### Testing Checklist
+Before moving forward, verify:
+- [ ] Steps section displays numbered steps
+- [ ] Visual section shows mathematical graphs
+- [ ] Practice problems are properly formatted
+- [ ] Concepts section shows all related topics
+- [ ] Error handling works for invalid responses
+
+#### Known Working Examples
+1. Mathematical Functions:
+   ```
+   sin(x)
+   2*x + 1
+   x^2
+   abs(x)
+   ```
+
+2. Sample Question:
+   "Explain the concept of a quadratic function and graph y = x^2"
+   - Should show graph
+   - Should include step-by-step explanation
+   - Should provide practice problems
+   - Should explain related concepts
+
 ## Type System Updates (2024-12-27)
 
 ### Previously Fixed Type Issues
@@ -724,200 +860,10 @@ const teachers = {
 ```
 
 #### Rollback Instructions
-To restore this working state, use either:
-
-1. Git commit hash:
-```bash
-git checkout 087f591
-```
-
-2. Git tag (recommended):
-```bash
-git checkout v1.0.0-teacher-card-restore
-```
-
-After rollback, verify these files:
-- components/aitutor/teacher-card.tsx
-- components/aitutor/voice-streaming.tsx
-- pages/aitutor/index.tsx
-- pages/api/aitutor/process.ts
-
-#### Development Strategy
-For future reference, to restore this working state:
-```bash
-git checkout v1.0.0-teacher-card-restore
-```
-
-#### Next Steps
-1. Continue with AI Tutor feature enhancements
-2. Focus on voice interaction improvements
-3. Add more interactive whiteboard features
-4. Implement subject-specific teaching styles
-
-## AI Tutor Feature Development Log
-
-### Session: December 27, 2023 (Part 2)
-
-#### Progress Made
-1. Fixed All Type Errors
-   - Fixed TeachingStyle type in `types/aitutor.ts`
-   - Fixed VoiceRecorder silenceTimeoutRef type
-   - Fixed VoiceStreaming disabled prop type
-   - Fixed NotebookWhiteboard selectedSubject and graphData props
-   - Fixed toast usage in TeamMembers component
-   - Fixed AudioContext and SpeechRecognition types in jest setup
-   - Added proper type assertions in NextAuth callbacks
-
-2. Jest Setup Improvements
-   - Created proper types for mock AudioContext
-   ```typescript
-   type MockAudioContext = {
-     createAnalyser: () => {
-       connect: jest.Mock;
-       disconnect: jest.Mock;
-       fftSize: number;
-       getByteFrequencyData: jest.Mock;
-     };
-     createMediaStreamSource: () => {
-       connect: jest.Mock;
-       disconnect: jest.Mock;
-     };
-   };
-   ```
-   - Added strategic @ts-ignore comments for browser type overrides
-   - Used globalThis instead of global for setting mock implementations
-   - Fixed SpeechRecognition and AudioContext type declarations
-
-3. Git Version Control
-   - Committed all changes with detailed message
-   - Created tag `v1.0.0-type-errors-fixed`
-   - Pushed to version3-constellation branch
-
-#### Git Commit Details
-```
-commit 0cf4f85
-Branch: version3-constellation
-Tag: v1.0.0-type-errors-fixed
-Message: fix: resolved all TypeScript errors
-
-- Fixed TeachingStyle type in aitutor.ts
-- Fixed VoiceRecorder silenceTimeoutRef type
-- Fixed VoiceStreaming disabled prop type
-- Fixed NotebookWhiteboard selectedSubject and graphData props
-- Fixed toast usage in TeamMembers component
-- Fixed AudioContext and SpeechRecognition types in jest setup
-- Added proper type assertions in NextAuth callbacks
-```
-
-#### Files Modified
-1. `types/aitutor.ts`
-   - Updated TeachingStyle type to match working version
-
-2. `components/aitutor/VoiceRecorder.tsx`
-   - Made silenceTimeoutRef nullable
-
-3. `components/aitutor/voice-streaming.tsx`
-   - Added disabled prop to VoiceStreamingProps interface
-
-4. `components/aitutor/NotebookWhiteboard.tsx`
-   - Added selectedSubject and graphData to props interface
-
-5. `components/teams/TeamMembers.tsx`
-   - Fixed toast usage by properly destructuring from useToast hook
-
-6. `jest.setup.ts`
-   - Added proper type declarations for browser APIs
-   - Improved mock implementations
-
-7. `pages/api/auth/[...nextauth].ts`
-   - Added proper type assertions in jwt and session callbacks
-
-#### Development Strategy
-For future reference, to restore this working state:
-```bash
-git checkout v1.0.0-type-errors-fixed
-```
-
-#### Next Steps
-1. Continue with AI Tutor feature enhancements
-2. Focus on voice interaction improvements
-3. Add more interactive whiteboard features
-4. Implement subject-specific teaching styles
-
-## AI Tutor Feature Development Log
-
-### Session: December 27, 2023 (Part 3)
-
-#### Progress Made
-1. Fixed MembershipTier Case Sensitivity Issue
-   - Updated User model's membershipTier field to use uppercase "FREE" as default
-   - Fixed type assertions in prismaAdapter
-   - Updated error handling in process.ts
-   - Fixed test user creation script
-
-2. Git Version Control
-   - Committed changes with detailed message
-   - Pushed to version3-constellation branch
-
-#### Git Commit Details
-```
-commit 0fd7b03
-Branch: version3-constellation
-Message: fix: update membershipTier handling
-
-- Changed membershipTier field in User model to use uppercase FREE
-- Fixed type assertions in prismaAdapter
-- Updated error handling in process.ts
-- Fixed test user creation script
-- Fixed sign-in issue with case sensitivity
-```
-
-#### Files Modified
-1. `prisma/schema.prisma`
-   - Updated membershipTier field to use uppercase "FREE"
-
-2. `lib/auth/prismaAdapter.ts`
-   - Added type assertions for membershipTier compatibility
-
-3. `pages/api/aitutor/process.ts`
-   - Improved error handling for AI generation
-
-4. `scripts/create-test-user.ts`
-   - Updated test user creation to use uppercase "FREE"
-
-#### Next Steps
-1. Address remaining TypeScript errors in prismaAdapter
-2. Continue with AI Tutor feature enhancements
-3. Test the sign-in flow with various user types
-
-## AI Tutor Feature Development Log
-
-### December 27, 2023 - UI/UX Enhancements and Type Fixes
-- **Commit**: c7f3ab4a7ba241cc9d0fd31dd0a710fe0f903339
-- **Branch**: version3-constellation
-- **Status**: All TypeScript errors fixed
-
-#### Changes
-1. UI/UX Improvements:
-   - Added notebook-style whiteboard with lined paper design
-   - Implemented red margin line for aesthetic appeal
-   - Enhanced teacher card animations and positioning
-   - Improved handwritten text rendering
-   - Updated teaching style selector with smooth animations
-   - Optimized content formatting for math expressions
-
-2. TypeScript Fixes:
-   - Fixed auth adapter type issues with NextAuth
-   - Properly typed membershipTier enum handling
-   - Added UserWithTeams type for team relationships
-   - Fixed type assertions in adapter functions
-   - Resolved all type errors in AI tutor components
-
-#### Rollback Instructions
 To rollback these changes if needed:
 ```bash
 git checkout version3-constellation
-git reset --hard c7f3ab4a7ba241cc9d0fd31dd0a710fe0f903339^
+git reset --hard 087f591^
 git push --force origin version3-constellation
 ```
 
@@ -931,7 +877,7 @@ git push --force origin version3-constellation
 #### Development Strategy
 For future reference, to restore this working state:
 ```bash
-git checkout v1.0.0-type-errors-fixed
+git checkout v1.0.0-teacher-card-restore
 ```
 
 #### Next Steps
@@ -1070,3 +1016,106 @@ git checkout v1.x.y  # For feature-specific rollback
 ```
 
 This plan will be updated as development progresses.
+
+## AI Tutor Feature Documentation
+
+### Overview
+The AI Tutor is an interactive learning component that provides personalized math and science tutoring through different teaching styles and visual aids.
+
+### Components
+
+### TeachingStyleSelector
+- **Purpose**: Allows users to choose between different teaching approaches
+- **Teaching Styles**:
+  - `step-by-step`: Detailed explanations with visual aids and practice problems
+  - `quick-response`: Concise answers with key formulas
+  - `interactive`: Real-time guidance and adaptive learning
+- **Features**:
+  - Dynamic feature selection for step-by-step mode
+  - Animated UI elements using Framer Motion
+  - Consistent styling with Tailwind CSS
+
+### NotebookWhiteboard
+- **Content Sections**:
+  - `steps`: Written explanations and solutions
+  - `visual`: Graphs, geometric shapes, and data visualizations
+  - `practice`: Interactive practice problems
+  - `concepts`: Related mathematical concepts
+
+### Visual Components
+1. **GraphPaper**:
+   - Renders mathematical functions
+   - Supports interactive point hovering
+   - Configurable grid lines and axes
+
+2. **GeometricCanvas**:
+   - Displays geometric shapes and measurements
+   - Supports multiple shape types: line, polygon, rectangle, circle
+   - Custom styling for shapes including colors and line widths
+
+3. **DataVisualizer**:
+   - Visualizes data using Chart.js
+   - Supports bar, pie, and scatter plots
+   - Customizable themes and interactive features
+
+## Type System
+
+### Core Types
+```typescript
+// Teaching Styles
+type TeachingStyle = 'step-by-step' | 'quick-response' | 'interactive';
+
+// Content Sections
+type ContentSection = 'steps' | 'visual' | 'practice' | 'concepts';
+
+// Visual Data Types
+interface Point {
+  x: number;
+  y: number;
+}
+
+interface VisualData {
+  type: 'function' | 'geometric' | 'data';
+  // Type-specific properties...
+}
+```
+
+### Response Processing
+- **AIResponse**: Structured response format with content sections
+- **WhiteboardContent**: Container for different types of educational content
+- **Visual Processing**: Handles function plotting, geometric shapes, and data visualization
+
+## Recent Updates (2024-12-27)
+
+### Type System Improvements
+1. **Teaching Style Refinement**:
+   - Removed outdated styles ('conceptual', 'visual')
+   - Added 'quick-response' style
+   - Unified teaching style types across components
+
+2. **Component Type Safety**:
+   - Fixed readonly array handling in TeachingStyleSelector
+   - Improved prop types for feature selection
+   - Added proper type guards for response processing
+
+3. **Visual Data Processing**:
+   - Enhanced error handling for visual data conversion
+   - Improved type safety in data visualization components
+   - Added null checks for optional visual data
+
+### UI Enhancements
+1. **TeachingStyleSelector**:
+   - Added icons for each teaching style
+   - Improved feature selection UI
+   - Enhanced animation and interaction feedback
+
+2. **Response Processing**:
+   - Better error handling and type validation
+   - Structured content processing
+   - Improved visual data integration
+
+## Next Steps
+- [ ] Implement error boundary components for better error handling
+- [ ] Add unit tests for type conversions and data processing
+- [ ] Enhance visual feedback for teaching style transitions
+- [ ] Add support for more chart types in DataVisualizer

@@ -6,9 +6,13 @@ export type TeachingStyle =
   | 'quick-response'
   | 'interactive';
 
+export type StepByStepFeature = 'steps' | 'visual' | 'practice' | 'concepts';
+
 interface TeachingStyleSelectorProps {
   selectedStyle: TeachingStyle;
   onStyleSelect: (style: TeachingStyle) => void;
+  onFeatureSelect?: (feature: StepByStepFeature) => void;
+  selectedFeature?: StepByStepFeature;
 }
 
 const teachingStyles = {
@@ -16,45 +20,53 @@ const teachingStyles = {
     icon: '📝',
     title: 'Step by Step',
     features: [
-      'Detailed steps',
-      'Visual examples',
-      'Practice problems',
-      'Related concepts'
+      { id: 'steps', label: 'Detailed Steps' },
+      { id: 'visual', label: 'Visualize' },
+      { id: 'practice', label: 'Practice' },
+      { id: 'concepts', label: 'Learn More' }
     ]
   },
   'quick-response': {
     icon: '⚡',
     title: 'Quick Response',
     features: [
-      'Direct answers',
-      'Key formulas',
-      'Quick examples',
-      'Core concepts'
+      { id: 'steps', label: 'Answer' },
+      { id: 'visual', label: 'Graph' },
+      { id: 'practice', label: 'Try It' },
+      { id: 'concepts', label: 'Theory' }
     ]
   },
   'interactive': {
-    icon: '🤝',
+    icon: '💎',
     title: 'Interactive',
     features: [
-      'Real-time guidance',
-      'Step validation',
-      'Adaptive learning',
-      'Practice-based'
+      { id: 'steps', label: 'Guide' },
+      { id: 'visual', label: 'Explore' },
+      { id: 'practice', label: 'Solve' },
+      { id: 'concepts', label: 'Master' }
     ]
   }
 };
 
 const FeatureList: React.FC<{
   style: TeachingStyle;
-}> = ({ style }) => (
+  onFeatureSelect?: (feature: StepByStepFeature) => void;
+  selectedFeature?: StepByStepFeature;
+}> = ({ style, onFeatureSelect, selectedFeature }) => (
   <div className="flex flex-wrap gap-1.5 mt-1">
     {teachingStyles[style].features.map((feature, index) => (
-      <span 
-        key={index} 
-        className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full"
+      <motion.button
+        key={index}
+        onClick={() => onFeatureSelect?.(feature.id as StepByStepFeature)}
+        className={`text-xs px-3 py-1 rounded-full transition-colors ${
+          selectedFeature === feature.id
+            ? 'bg-blue-500 text-white font-medium'
+            : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+        }`}
+        whileTap={{ scale: 0.95 }}
       >
-        {feature}
-      </span>
+        {feature.label}
+      </motion.button>
     ))}
   </div>
 );
@@ -62,6 +74,8 @@ const FeatureList: React.FC<{
 export const TeachingStyleSelector: React.FC<TeachingStyleSelectorProps> = ({
   selectedStyle,
   onStyleSelect,
+  onFeatureSelect,
+  selectedFeature,
 }) => {
   return (
     <div className="space-y-2">
@@ -82,7 +96,11 @@ export const TeachingStyleSelector: React.FC<TeachingStyleSelectorProps> = ({
           </motion.button>
         ))}
       </div>
-      <FeatureList style={selectedStyle} />
+      <FeatureList 
+        style={selectedStyle}
+        onFeatureSelect={onFeatureSelect}
+        selectedFeature={selectedFeature}
+      />
     </div>
   );
 };

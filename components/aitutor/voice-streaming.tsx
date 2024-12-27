@@ -67,7 +67,7 @@ export function VoiceStreaming({ onTranscript, isActive, disabled = false }: Voi
   }, [onTranscript]);
 
   const toggleListening = useCallback(async () => {
-    if (!recognition) return;
+    if (!recognition || disabled) return;
 
     try {
       if (!isListening) {
@@ -81,7 +81,7 @@ export function VoiceStreaming({ onTranscript, isActive, disabled = false }: Voi
       setError('Please allow microphone access to use voice input.');
       setIsListening(false);
     }
-  }, [recognition, isListening]);
+  }, [recognition, isListening, disabled]);
 
   if (error) {
     return (
@@ -92,22 +92,31 @@ export function VoiceStreaming({ onTranscript, isActive, disabled = false }: Voi
   }
 
   return (
-    <div className="flex items-center justify-center space-x-3 bg-white p-4 rounded-lg shadow-sm">
-      <div className={`w-3 h-3 rounded-full transition-colors duration-200 ${
-        isListening ? 'bg-red-500 animate-pulse' : 'bg-gray-300'
-      }`} />
-      <span className="text-sm text-gray-600 min-w-[100px]">
-        {isListening ? 'Listening...' : 'Click to speak'}
-      </span>
+    <div className="flex flex-col items-center justify-center space-y-4">
       <Button
         onClick={toggleListening}
-        disabled={!isActive || disabled}
-        variant={isListening ? "destructive" : "default"}
-        size="sm"
-        className="min-w-[80px]"
+        disabled={disabled}
+        className={`relative px-6 py-3 rounded-full transition-all duration-200 ${
+          isListening 
+            ? 'bg-red-500 hover:bg-red-600' 
+            : 'bg-blue-500 hover:bg-blue-600'
+        } text-white font-medium`}
       >
-        {isListening ? 'Stop' : 'Start'}
+        <div className="flex items-center space-x-2">
+          <div className={`w-3 h-3 rounded-full transition-colors duration-200 ${
+            isListening ? 'bg-white animate-pulse' : 'bg-white/80'
+          }`} />
+          <span>
+            {isListening ? 'Listening...' : 'Click to speak'}
+          </span>
+        </div>
       </Button>
+      
+      {isListening && (
+        <p className="text-sm text-gray-600">
+          Speak your question clearly...
+        </p>
+      )}
     </div>
   );
 }
