@@ -111,8 +111,8 @@ export function CustomPrismaAdapter(): Adapter {
       const { id, ...userData } = data;
 
       const user = await prisma.user.update({
-        where: { id },
-        data: userData as Prisma.UserUpdateInput,
+        where: { id: id as string },
+        data: userData as any,
         include: {
           teams: {
             include: {

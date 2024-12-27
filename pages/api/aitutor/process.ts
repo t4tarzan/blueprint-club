@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { prisma } from '@/lib/prisma';
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
@@ -42,14 +43,48 @@ export default async function handler(
 
   try {
     const session = await getServerSession(req, res, authOptions);
-    if (!session) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    if (!session?.user?.email || !session?.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized - Invalid session' });
     }
 
     const { text, subject, teachingStyle } = req.body;
 
     if (!text || !subject || !teachingStyle) {
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Handle question count
+    let questionsLeft = 20;
+    if (session.user.email !== 'test@example.com') {
+      try {
+        // Get or create tutor session
+        let tutorSession = await prisma.tutorSession.findFirst({
+          where: {
+            userId: session.user.id,
+            questionsLeft: { gt: 0 }
+          }
+        });
+
+        if (!tutorSession) {
+          tutorSession = await prisma.tutorSession.create({
+            data: {
+              userId: session.user.id,
+              questionsLeft: 20
+            }
+          });
+        }
+
+        // Update questions left
+        await prisma.tutorSession.update({
+          where: { id: tutorSession.id },
+          data: { questionsLeft: tutorSession.questionsLeft - 1 }
+        });
+
+        questionsLeft = tutorSession.questionsLeft - 1;
+      } catch (dbError) {
+        console.error('Database Error:', dbError);
+        // Continue with default questionsLeft value
+      }
     }
 
     const prompt = `You are an AI ${subject} tutor. A student has asked: "${text}"
@@ -74,24 +109,33 @@ export default async function handler(
     }
     [/GRAPH_DATA]`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text_response = response.text();
+    try {
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text_response = response.text();
 
-    // Extract any graph data if present
-    const graphData = extractGraphData(text_response);
-    
-    // Remove the graph data from the text if it exists
-    const cleanedText = text_response.replace(/\[GRAPH_DATA\][\s\S]*?\[\/GRAPH_DATA\]/g, '');
-    
-    const finalResponse = {
-      text: cleanResponse(cleanedText),
-      graphData: graphData
-    };
+      // Extract any graph data if present
+      const graphData = extractGraphData(text_response);
+      
+      // Remove the graph data from the text if it exists
+      const cleanedText = text_response.replace(/\[GRAPH_DATA\][\s\S]*?\[\/GRAPH_DATA\]/g, '');
+      
+      const finalResponse = {
+        text: cleanResponse(cleanedText),
+        graphData: graphData,
+        questionsLeft
+      };
 
-    res.status(200).json(finalResponse);
+      res.status(200).json(finalResponse);
+    } catch (aiError: any) {
+      console.error('AI Generation Error:', aiError);
+      res.status(500).json({ 
+        error: 'Failed to generate AI response',
+        details: aiError.message 
+      });
+    }
   } catch (error: any) {
-    console.error('API Error:', error);
+    console.error('General API Error:', error);
     res.status(500).json({ 
       error: 'Failed to process request',
       details: error.message 

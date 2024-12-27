@@ -16,6 +16,12 @@ enum Role {
   MEMBER
 }
 
+enum MembershipTier {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
 enum SubscriptionStatus {
   ACTIVE
   CANCELED
@@ -65,7 +71,7 @@ model User {
   email                String    @unique
   password             String?
   image                String?
-  membershipTier       String    @default("free")
+  membershipTier       MembershipTier @default(FREE)
   emailVerified        DateTime?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt

@@ -11,7 +11,7 @@ async function createUser() {
         email: 'test@example.com',
         password: hashedPassword,
         name: 'Test User',
-        membershipTier: 'free'
+        membershipTier: 'FREE'
       }
     });
     console.log('Created user:', user);
