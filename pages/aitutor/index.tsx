@@ -95,23 +95,15 @@ export default function AITutor() {
               </div>
 
               {/* Teaching Style Selector */}
-              <AnimatePresence>
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                >
-                  <TeachingStyleSelector
-                    selectedStyle={teachingStyle}
-                    onStyleSelect={handleTeachingStyleChange}
-                  />
-                </motion.div>
-              </AnimatePresence>
+              <TeachingStyleSelector
+                selectedStyle={teachingStyle}
+                onStyleSelect={handleTeachingStyleChange}
+              />
 
-              {/* Session Info */}
+              {/* Session Status */}
               <div className="flex items-center space-x-2">
-                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-sm text-gray-600">Session Active</span>
+                <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                <span className="text-sm text-gray-600 font-medium">Session Active</span>
               </div>
             </div>
           </div>
@@ -119,63 +111,50 @@ export default function AITutor() {
 
         {/* Main Content */}
         <div className="flex-1 overflow-hidden">
-          <div className="max-w-[1600px] mx-auto h-full px-4 sm:px-6 lg:px-8 py-6">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
-              {/* Left Tutor */}
-              <TeacherCard
-                teacher="math"
-                isSelected={selectedTeacher === 'math'}
-                onSelect={() => setSelectedTeacher('math')}
-                disabled={isProcessing}
-              />
-              
-              {/* Center Whiteboard */}
-              <div className="lg:col-span-8 lg:col-start-3 h-[calc(100vh-16rem)] flex flex-col relative">
-                {!selectedTeacher && (
-                  <motion.div 
-                    className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-lg border-2 border-dashed border-gray-200"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <div className="text-center p-8">
-                      <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                        Welcome to AI Tutor! 👋
-                      </h3>
-                      <p className="text-gray-600 max-w-md">
-                        Select a teacher to start your learning journey. Choose Math for mathematical concepts or Science for scientific exploration.
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
-                <div className="flex-1 min-h-0">
-                  <NotebookWhiteboard
-                    content={whiteboardContent}
-                    isProcessing={isProcessing}
-                    selectedSubject={selectedTeacher}
-                    graphData={graphData}
-                    teachingStyle={teachingStyle}
-                  />
-                </div>
-                {selectedTeacher && (
-                  <div className="mt-4 bg-white rounded-lg shadow-lg p-4 flex-none">
-                    <VoiceStreaming
-                      isActive={true}
-                      onTranscript={handleTranscript}
-                      disabled={isProcessing}
-                    />
-                  </div>
-                )}
+          <div className="h-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="h-full flex gap-6">
+              {/* Left Teacher */}
+              <div className="w-72 flex-none">
+                <TeacherCard
+                  teacher="math"
+                  isSelected={selectedTeacher === 'math'}
+                  onSelect={() => setSelectedTeacher('math')}
+                  disabled={isProcessing}
+                />
               </div>
 
-              {/* Right Tutor */}
-              <TeacherCard
-                teacher="science"
-                isSelected={selectedTeacher === 'science'}
-                onSelect={() => setSelectedTeacher('science')}
-                disabled={isProcessing}
-              />
+              {/* Center Content */}
+              <div className="flex-1 flex flex-col min-w-0">
+                <NotebookWhiteboard
+                  content={whiteboardContent}
+                  teachingStyle={teachingStyle}
+                  isProcessing={isProcessing}
+                  selectedSubject={selectedTeacher}
+                  graphData={graphData}
+                />
+              </div>
+
+              {/* Right Teacher */}
+              <div className="w-72 flex-none">
+                <TeacherCard
+                  teacher="science"
+                  isSelected={selectedTeacher === 'science'}
+                  onSelect={() => setSelectedTeacher('science')}
+                  disabled={isProcessing}
+                />
+              </div>
             </div>
+          </div>
+        </div>
+
+        {/* Voice Control */}
+        <div className="flex-none bg-white border-t border-gray-200">
+          <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <VoiceStreaming
+              isActive={!!selectedTeacher && !isProcessing}
+              onTranscript={handleTranscript}
+              disabled={!selectedTeacher || isProcessing}
+            />
           </div>
         </div>
       </div>
