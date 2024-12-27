@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface VoiceHandlerProps {
@@ -7,64 +7,141 @@ interface VoiceHandlerProps {
   onError: (error: string) => void;
 }
 
-export function VoiceHandler({ isCallActive, onSpeechResult, onError }: VoiceHandlerProps) {
+interface SpeechRecognitionResult {
+  [index: number]: {
+    transcript: string;
+    confidence: number;
+  };
+  length: number;
+  item(index: number): { transcript: string; confidence: number };
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+  onstart: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+  abort: () => void;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: {
+      new(): SpeechRecognition;
+    };
+    webkitSpeechRecognition: {
+      new(): SpeechRecognition;
+    };
+    AudioContext: typeof AudioContext;
+  }
+}
+
+const VoiceHandler: React.FC<VoiceHandlerProps> = ({
+  isCallActive,
+  onSpeechResult,
+  onError,
+}) => {
   const [isListening, setIsListening] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
-    // Initialize Web Speech API
-    if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
+    if (typeof window !== 'undefined') {
+      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognitionAPI) {
+        const recognition = new SpeechRecognitionAPI();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
 
-      recognitionRef.current.onresult = (event: any) => {
-        const result = Array.from(event.results).pop();
-        if (result?.[0]?.transcript) {
-          onSpeechResult(result[0].transcript);
-        }
-      };
+        recognition.onstart = () => {
+          setIsListening(true);
+        };
 
-      recognitionRef.current.onerror = (event: any) => {
-        onError(event.error);
-        setIsListening(false);
-      };
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
+          const results = event.results;
+          const transcripts = [];
+          for (let i = 0; i < results.length; i++) {
+            const result = results[i];
+            if (result[0]?.transcript) {
+              transcripts.push(result[0].transcript);
+            }
+          }
+          if (transcripts.length > 0) {
+            onSpeechResult(transcripts.join(' '));
+          }
+        };
+
+        recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+          onError(event.error);
+        };
+
+        recognition.onend = () => {
+          setIsListening(false);
+        };
+
+        recognitionRef.current = recognition;
+      }
     }
-
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
   }, [onSpeechResult, onError]);
 
   useEffect(() => {
-    const setupAudioAnalyser = async () => {
-      try {
-        if (isCallActive) {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    if (recognitionRef.current) {
+      if (isCallActive && !isListening) {
+        try {
+          recognitionRef.current.start();
+        } catch (error) {
+          console.error('Error starting speech recognition:', error);
+        }
+      } else if (!isCallActive && isListening) {
+        try {
+          recognitionRef.current.stop();
+        } catch (error) {
+          console.error('Error stopping speech recognition:', error);
+        }
+      }
+    }
+  }, [isCallActive, isListening]);
+
+  useEffect(() => {
+    if (isCallActive && !isListening) {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+          const audioContext = new window.AudioContext();
           const analyser = audioContext.createAnalyser();
           const source = audioContext.createMediaStreamSource(stream);
-          
+
           analyser.fftSize = 256;
           source.connect(analyser);
           analyserRef.current = analyser;
 
           const updateAudioLevel = () => {
             if (!analyserRef.current) return;
-            
+
             const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
             analyserRef.current.getByteFrequencyData(dataArray);
-            
-            // Calculate average volume level
+
             const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
             setAudioLevel(average / 128); // Normalize to 0-1
 
@@ -72,23 +149,17 @@ export function VoiceHandler({ isCallActive, onSpeechResult, onError }: VoiceHan
           };
 
           updateAudioLevel();
-          recognitionRef.current?.start();
-          setIsListening(true);
-        } else {
-          recognitionRef.current?.stop();
-          setIsListening(false);
-          if (animationFrameRef.current) {
-            cancelAnimationFrame(animationFrameRef.current);
-          }
-        }
-      } catch (error) {
-        console.error('Error accessing microphone:', error);
-        onError('Error accessing microphone');
+        })
+        .catch(error => {
+          console.error('Error accessing microphone:', error);
+          onError('Error accessing microphone');
+        });
+    } else if (!isCallActive && isListening) {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
-    };
-
-    setupAudioAnalyser();
-  }, [isCallActive, onError]);
+    }
+  }, [isCallActive, isListening]);
 
   return (
     <AnimatePresence>
@@ -129,4 +200,6 @@ export function VoiceHandler({ isCallActive, onSpeechResult, onError }: VoiceHan
       )}
     </AnimatePresence>
   );
-}
+};
+
+export default VoiceHandler;

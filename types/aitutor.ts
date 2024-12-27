@@ -1,25 +1,24 @@
-export type TeachingStyle = 'step-by-step' | 'quick' | 'interactive';
+export type TeachingStyle = 'Socratic' | 'Direct' | 'Interactive' | 'Adaptive' | 'Project-Based' | 'Guided';
 
 export interface AITutorState {
-  selectedTeacher: 'math' | 'science' | null;
-  isCallActive: boolean;
-  content: string[];
-  isProcessing: boolean;
   teachingStyle: TeachingStyle;
+  isCallActive: boolean;
+  questionsLeft: number;
 }
 
-export interface TeacherCardProps {
-  teacher: 'math' | 'science';
-  isSelected: boolean;
-  onSelect: () => void;
-  disabled?: boolean;
+export interface TeachingStyleSelectorProps {
+  selectedStyle: TeachingStyle;
+  onSelectStyle: (style: TeachingStyle) => void;
 }
 
-export interface VoiceStreamingProps {
-  isActive: boolean;
-  selectedTeacher: 'math' | 'science';
-  onTranscript: (text: string) => Promise<void>;
-  onSpeechResult: (result: string) => void;
-  onSpeechEnd: () => void;
-  onError: (error: Error) => void;
+export interface DataPoint {
+  label: string;
+  value: number;
+  color: string;
+}
+
+export interface GraphDisplayProps {
+  data: DataPoint[];
+  type: 'bar' | 'pie';
+  title: string;
 }

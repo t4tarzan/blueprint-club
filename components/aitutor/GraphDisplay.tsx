@@ -1,206 +1,97 @@
-import React, { useRef, useEffect } from 'react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  PieController,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend,
-  ChartData,
-  ChartOptions,
-  ScatterController,
-  ScatterDataPoint,
-} from 'chart.js';
-import { Line, Bar, Pie, Scatter } from 'react-chartjs-2';
-import zoomPlugin from 'chartjs-plugin-zoom';
+import React from 'react';
 
-// Register ChartJS components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  PieController,
-  ArcElement,
-  ScatterController,
-  Title,
-  Tooltip,
-  Legend,
-  zoomPlugin
-);
-
-interface GraphDisplayProps {
-  graphData: {
-    type: 'line' | 'scatter' | 'bar' | 'pie';
-    title: string;
-    labels: string[];
-    datasets: {
-      label: string;
-      data: number[] | ScatterDataPoint[];
-      borderColor?: string;
-      backgroundColor?: string;
-    }[];
-    options?: {
-      xAxisLabel?: string;
-      yAxisLabel?: string;
-      showGrid?: boolean;
-      startAtZero?: boolean;
-    };
-  };
+interface DataPoint {
+  label: string;
+  value: number;
+  color: string;
 }
 
-const GraphDisplay: React.FC<GraphDisplayProps> = ({ graphData }) => {
-  const chartRef = useRef<ChartJS | null>(null);
+interface GraphDisplayProps {
+  data: DataPoint[];
+  type: 'bar' | 'pie';
+  title?: string;
+}
 
-  const baseOptions: ChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'top' as const,
-        labels: {
-          font: {
-            family: 'Kalam'
-          }
-        }
-      },
-      title: {
-        display: true,
-        text: graphData.title,
-        font: {
-          size: 16,
-          family: 'Kalam'
-        }
-      },
-      zoom: {
-        pan: {
-          enabled: true,
-          mode: 'xy'
-        },
-        zoom: {
-          wheel: {
-            enabled: true,
-          },
-          pinch: {
-            enabled: true
-          },
-          mode: 'xy',
-        }
-      }
-    },
-    scales: graphData.type !== 'pie' ? {
-      y: {
-        beginAtZero: graphData.options?.startAtZero ?? true,
-        title: {
-          display: !!graphData.options?.yAxisLabel,
-          text: graphData.options?.yAxisLabel,
-          font: {
-            family: 'Kalam'
-          }
-        },
-        grid: {
-          display: graphData.options?.showGrid ?? true,
-          drawBorder: true,
-          color: 'rgba(0, 0, 0, 0.1)',
-          borderColor: 'rgba(0, 0, 0, 0.3)',
-          borderWidth: 1
-        },
-        ticks: {
-          font: {
-            family: 'Kalam'
-          }
-        }
-      },
-      x: {
-        title: {
-          display: !!graphData.options?.xAxisLabel,
-          text: graphData.options?.xAxisLabel,
-          font: {
-            family: 'Kalam'
-          }
-        },
-        grid: {
-          display: graphData.options?.showGrid ?? true,
-          drawBorder: true,
-          color: 'rgba(0, 0, 0, 0.1)',
-          borderColor: 'rgba(0, 0, 0, 0.3)',
-          borderWidth: 1
-        },
-        ticks: {
-          font: {
-            family: 'Kalam'
-          }
-        }
-      }
-    } : undefined
-  };
+const GraphDisplay: React.FC<GraphDisplayProps> = ({ data, type, title }) => {
+  const maxValue = Math.max(...data.map(d => d.value));
 
-  // For scatter plots (geometry), ensure aspect ratio is maintained
-  if (graphData.type === 'scatter') {
-    baseOptions.aspectRatio = 1;
-    baseOptions.scales = {
-      ...baseOptions.scales,
-      x: {
-        ...baseOptions.scales?.x,
-        min: Math.min(...graphData.datasets.flatMap(d => d.data.map((p: any) => p.x))) - 1,
-        max: Math.max(...graphData.datasets.flatMap(d => d.data.map((p: any) => p.x))) + 1,
-      },
-      y: {
-        ...baseOptions.scales?.y,
-        min: Math.min(...graphData.datasets.flatMap(d => d.data.map((p: any) => p.y))) - 1,
-        max: Math.max(...graphData.datasets.flatMap(d => d.data.map((p: any) => p.y))) + 1,
-      }
-    };
+  if (type === 'bar') {
+    return (
+      <div className="w-full h-full min-h-[300px] p-4">
+        {title && <h3 className="text-lg font-medium mb-4 text-center">{title}</h3>}
+        <div className="flex items-end space-x-2 h-[250px]">
+          {data.map((point, index) => (
+            <div key={index} className="flex flex-col items-center flex-1">
+              <div 
+                className="w-full rounded-t-lg transition-all duration-500"
+                style={{ 
+                  height: `${(point.value / maxValue) * 200}px`,
+                  backgroundColor: point.color
+                }}
+              />
+              <div className="text-sm mt-2 text-gray-600 truncate w-full text-center">
+                {point.label}
+              </div>
+              <div className="text-xs text-gray-500">
+                {point.value}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
-  const resetZoom = () => {
-    if (chartRef.current) {
-      chartRef.current.resetZoom();
-    }
-  };
-
-  const data: ChartData = {
-    labels: graphData.labels,
-    datasets: graphData.datasets.map(dataset => ({
-      ...dataset,
-      borderColor: dataset.borderColor || 'rgb(75, 192, 192)',
-      backgroundColor: dataset.backgroundColor || 'rgba(75, 192, 192, 0.5)',
-      tension: 0.3
-    }))
-  };
-
-  const renderChart = () => {
-    switch (graphData.type) {
-      case 'line':
-        return <Line ref={chartRef} options={baseOptions} data={data} />;
-      case 'bar':
-        return <Bar ref={chartRef} options={baseOptions} data={data} />;
-      case 'pie':
-        return <Pie ref={chartRef} options={baseOptions} data={data} />;
-      case 'scatter':
-        return <Scatter ref={chartRef} options={baseOptions} data={data} />;
-      default:
-        return <Line ref={chartRef} options={baseOptions} data={data} />;
-    }
-  };
+  const total = data.reduce((sum, point) => sum + point.value, 0);
+  let currentAngle = 0;
 
   return (
-    <div className="relative bg-white rounded-lg p-4 my-4 shadow-sm w-full h-[400px]">
-      <div className="absolute top-2 right-2 z-10">
-        <button
-          onClick={resetZoom}
-          className="px-2 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-        >
-          Reset Zoom
-        </button>
+    <div className="w-full h-full min-h-[300px] p-4">
+      {title && <h3 className="text-lg font-medium mb-4 text-center">{title}</h3>}
+      <div className="relative w-[250px] h-[250px] mx-auto">
+        <svg viewBox="0 0 100 100" className="transform -rotate-90">
+          {data.map((point, index) => {
+            const percentage = (point.value / total) * 100;
+            const angle = (percentage / 100) * 360;
+            const x1 = 50 + 50 * Math.cos((currentAngle * Math.PI) / 180);
+            const y1 = 50 + 50 * Math.sin((currentAngle * Math.PI) / 180);
+            const x2 = 50 + 50 * Math.cos(((currentAngle + angle) * Math.PI) / 180);
+            const y2 = 50 + 50 * Math.sin(((currentAngle + angle) * Math.PI) / 180);
+            const largeArcFlag = angle > 180 ? 1 : 0;
+            
+            const pathData = `
+              M 50 50
+              L ${x1} ${y1}
+              A 50 50 0 ${largeArcFlag} 1 ${x2} ${y2}
+              Z
+            `;
+            
+            currentAngle += angle;
+            
+            return (
+              <path
+                key={index}
+                d={pathData}
+                fill={point.color}
+                className="transition-all duration-500"
+              />
+            );
+          })}
+        </svg>
       </div>
-      {renderChart()}
+      <div className="flex flex-wrap justify-center gap-4 mt-4">
+        {data.map((point, index) => (
+          <div key={index} className="flex items-center">
+            <div 
+              className="w-3 h-3 rounded-full mr-2"
+              style={{ backgroundColor: point.color }}
+            />
+            <span className="text-sm text-gray-600">
+              {point.label} ({point.value})
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
