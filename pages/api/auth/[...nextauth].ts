@@ -95,14 +95,14 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }): Promise<JWT & { user: AuthUser }> {
       if (user) {
-        token.user = user as AuthUser;
+        token.user = user as unknown as AuthUser;
       }
       return token as JWT & { user: AuthUser };
     },
     async session({ session, token }): Promise<ExtendedSession> {
       return {
         ...session,
-        user: token.user,
+        user: token.user as unknown as AuthUser,
       };
     },
   },

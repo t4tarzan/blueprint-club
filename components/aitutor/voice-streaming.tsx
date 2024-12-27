@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 interface VoiceStreamingProps {
   onTranscript: (text: string) => void;
   isActive: boolean;
+  disabled?: boolean;
 }
 
-export function VoiceStreaming({ onTranscript, isActive }: VoiceStreamingProps) {
+export function VoiceStreaming({ onTranscript, isActive, disabled = false }: VoiceStreamingProps) {
   const [isListening, setIsListening] = useState(false);
   const [recognition, setRecognition] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +101,7 @@ export function VoiceStreaming({ onTranscript, isActive }: VoiceStreamingProps) 
       </span>
       <Button
         onClick={toggleListening}
-        disabled={!isActive}
+        disabled={!isActive || disabled}
         variant={isListening ? "destructive" : "default"}
         size="sm"
         className="min-w-[80px]"

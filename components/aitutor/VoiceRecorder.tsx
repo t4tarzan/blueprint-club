@@ -20,7 +20,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const audioContext = useRef<AudioContext | null>(null);
   const analyser = useRef<AnalyserNode | null>(null);
-  const silenceTimeoutRef = useRef<NodeJS.Timeout>();
+  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const audioChunks = useRef<Blob[]>([]);
 
   useEffect(() => {

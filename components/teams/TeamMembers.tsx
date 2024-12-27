@@ -12,7 +12,7 @@ interface TeamMembersProps {
 const TeamMembers = ({ team, onUpdate }: TeamMembersProps) => {
   const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(false);
-  const toast = useToast();
+  const { toast } = useToast();
 
   const currentUserRole = team.members.find(
     (member) => member.userId === session?.user?.id

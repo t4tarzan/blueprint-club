@@ -1,4 +1,4 @@
-export type TeachingStyle = 'Socratic' | 'Direct' | 'Interactive' | 'Adaptive' | 'Project-Based' | 'Guided';
+export type TeachingStyle = 'step-by-step' | 'quick-response' | 'interactive';
 
 export interface AITutorState {
   teachingStyle: TeachingStyle;

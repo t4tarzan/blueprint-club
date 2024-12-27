@@ -7,6 +7,8 @@ interface NotebookWhiteboardProps {
   content: string;
   teachingStyle: TeachingStyle;
   isProcessing?: boolean;
+  selectedSubject?: 'math' | 'science' | null;
+  graphData?: any;
 }
 
 const lineColors = {
@@ -20,6 +22,8 @@ export const NotebookWhiteboard: React.FC<NotebookWhiteboardProps> = ({
   content,
   teachingStyle,
   isProcessing = false,
+  selectedSubject,
+  graphData,
 }) => {
   const lines = useMemo(() => {
     if (Array.isArray(content)) {

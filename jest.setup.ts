@@ -1,5 +1,29 @@
 import '@testing-library/jest-dom';
 
+type MockAudioContext = {
+  createAnalyser: () => {
+    connect: jest.Mock;
+    disconnect: jest.Mock;
+    fftSize: number;
+    getByteFrequencyData: jest.Mock;
+  };
+  createMediaStreamSource: () => {
+    connect: jest.Mock;
+    disconnect: jest.Mock;
+  };
+};
+
+declare global {
+  // @ts-ignore - Override browser types for testing
+  var SpeechRecognition: jest.Mock;
+  // @ts-ignore - Override browser types for testing
+  var webkitSpeechRecognition: jest.Mock;
+  // @ts-ignore - Override browser types for testing
+  var AudioContext: jest.MockedFunction<() => MockAudioContext>;
+  // @ts-ignore - Override browser types for testing
+  var webkitAudioContext: jest.MockedFunction<() => MockAudioContext>;
+}
+
 // Mock next/router
 jest.mock('next/router', () => ({
   useRouter: () => ({
@@ -16,7 +40,7 @@ jest.mock('next-auth/react', () => ({
   }),
 }));
 
-// Mock SpeechRecognition API
+// Mock SpeechRecognition
 const mockSpeechRecognition = {
   start: jest.fn(),
   stop: jest.fn(),
@@ -24,31 +48,30 @@ const mockSpeechRecognition = {
   removeEventListener: jest.fn(),
 };
 
-global.SpeechRecognition = jest.fn(() => mockSpeechRecognition);
-global.webkitSpeechRecognition = jest.fn(() => mockSpeechRecognition);
+// @ts-ignore - Override browser types for testing
+globalThis.SpeechRecognition = jest.fn(() => mockSpeechRecognition);
+// @ts-ignore - Override browser types for testing
+globalThis.webkitSpeechRecognition = jest.fn(() => mockSpeechRecognition);
 
 // Mock AudioContext
-class MockAudioContext {
-  createAnalyser() {
-    return {
-      connect: jest.fn(),
-      disconnect: jest.fn(),
-      fftSize: 32,
-      getByteFrequencyData: jest.fn(),
-    };
-  }
-  
-  createMediaStreamSource() {
-    return {
-      connect: jest.fn(),
-      disconnect: jest.fn(),
-    };
-  }
-}
+const MockAudioContext = jest.fn().mockImplementation(() => ({
+  createAnalyser: () => ({
+    connect: jest.fn(),
+    disconnect: jest.fn(),
+    fftSize: 32,
+    getByteFrequencyData: jest.fn(),
+  }),
+  createMediaStreamSource: () => ({
+    connect: jest.fn(),
+    disconnect: jest.fn(),
+  }),
+}));
 
-global.AudioContext = MockAudioContext as any;
-global.webkitAudioContext = MockAudioContext as any;
+// @ts-ignore - Override browser types for testing
+globalThis.AudioContext = MockAudioContext;
+// @ts-ignore - Override browser types for testing
+globalThis.webkitAudioContext = MockAudioContext;
 
 // Mock window.URL
-global.URL.createObjectURL = jest.fn();
-global.URL.revokeObjectURL = jest.fn();
+Object.defineProperty(globalThis.URL, 'createObjectURL', { value: jest.fn() });
+Object.defineProperty(globalThis.URL, 'revokeObjectURL', { value: jest.fn() });

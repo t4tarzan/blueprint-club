@@ -719,20 +719,38 @@ const teachers = {
 
 #### Git Commit Hash
 ```
-[To be added after commit]
+087f591 - Restored TeacherCard design and fixed voice streaming
 ```
 
 #### Rollback Instructions
-To restore this working state:
-1. Use git checkout with the commit hash
-2. Verify the following files:
-   - components/aitutor/voice-streaming.tsx
-   - components/aitutor/teacher-card.tsx
-   - pages/aitutor/index.tsx
-   - pages/api/aitutor/process.ts
+To restore this working state, use either:
 
-#### Next Steps
-1. Add more interactive elements to the whiteboard
-2. Implement voice response animations
-3. Add session persistence
-4. Improve math rendering capabilities
+1. Git commit hash:
+```bash
+git checkout 087f591
+```
+
+2. Git tag (recommended):
+```bash
+git checkout v1.0.0-teacher-card-restore
+```
+
+After rollback, verify these files:
+- components/aitutor/teacher-card.tsx
+- components/aitutor/voice-streaming.tsx
+- pages/aitutor/index.tsx
+- pages/api/aitutor/process.ts
+
+#### Development Strategy
+For future features:
+1. Create a new branch for each feature
+```bash
+git checkout -b feature/new-feature v1.0.0-teacher-card-restore
+```
+
+2. Make small, focused changes
+3. Test thoroughly
+4. Commit with descriptive messages
+5. Tag important checkpoints
+
+This allows easy rollback to any stable point in development.
