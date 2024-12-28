@@ -4,6 +4,7 @@ import { VoiceStreaming } from '@/components/aitutor/voice-streaming';
 import { NotebookWhiteboard } from '@/components/aitutor/NotebookWhiteboard';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { TeachingStyleSelector } from '@/components/aitutor/TeachingStyleSelector';
+import { InputBar } from '@/components/aitutor/input-bar'; // Fixed import path
 import type { WhiteboardContent, TeachingStyle, ContentSection, FunctionGraphData } from '@/types/aitutor';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { NextPage } from 'next';
@@ -46,7 +47,7 @@ const AITutorPage: NextPage = () => {
     setActiveSection(feature);
   };
 
-  const handleTranscript = async (text: string) => {
+  const handleUserInput = async (text: string) => { // New function to handle user input
     if (!selectedTeacher) return;
 
     setIsProcessing(true);
@@ -228,7 +229,7 @@ const AITutorPage: NextPage = () => {
           <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <VoiceStreaming
               isActive={!!selectedTeacher && !isProcessing}
-              onTranscript={handleTranscript}
+              onTranscript={handleUserInput}
               disabled={!selectedTeacher || isProcessing}
             />
           </div>

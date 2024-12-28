@@ -99,6 +99,11 @@ export const NotebookWhiteboard: React.FC<NotebookWhiteboardProps> = ({
         <div className="w-full h-[calc(100vh-200px)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent hover:scrollbar-thumb-gray-500">
           <div className="px-16 py-4">
             {renderContent()}
+            {isProcessing && (
+              <div className="flex items-center justify-center py-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+              </div>
+            )}
           </div>
         </div>
       </div>

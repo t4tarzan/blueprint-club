@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
+import { InputBar } from './input-bar';
 
 interface VoiceStreamingProps {
   onTranscript: (text: string) => void;
@@ -92,14 +93,19 @@ export function VoiceStreaming({ onTranscript, isActive, disabled = false }: Voi
   }
 
   return (
-    <div className="flex flex-col items-center justify-center space-y-4">
+    <div className="flex items-center justify-center space-x-4">
+      <InputBar
+        onSubmit={onTranscript}
+        isProcessing={!isActive}
+        disabled={disabled}
+      />
       <Button
         onClick={toggleListening}
         disabled={disabled}
-        className={`relative px-6 py-3 rounded-full transition-all duration-200 ${
+        className={`relative h-12 px-6 rounded-full transition-all duration-200 ${
           isListening 
             ? 'bg-red-500 hover:bg-red-600' 
-            : 'bg-blue-500 hover:bg-blue-600'
+            : 'bg-[#4B83F2] hover:bg-[#4B83F2]/90'
         } text-white font-medium`}
       >
         <div className="flex items-center space-x-2">
@@ -113,7 +119,7 @@ export function VoiceStreaming({ onTranscript, isActive, disabled = false }: Voi
       </Button>
       
       {isListening && (
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-600 absolute -bottom-6">
           Speak your question clearly...
         </p>
       )}
