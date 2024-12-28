@@ -5,13 +5,13 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 
 interface HandwrittenTextProps {
-  text: string;
+  lines: string[];
   speed?: number;
   className?: string;
 }
 
 export const HandwrittenText: React.FC<HandwrittenTextProps> = ({
-  text,
+  lines,
   speed = 30,
   className = ''
 }) => {
@@ -30,8 +30,6 @@ export const HandwrittenText: React.FC<HandwrittenTextProps> = ({
     }
     return line;
   };
-
-  const lines = text.split('\n');
 
   return (
     <div 

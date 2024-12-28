@@ -28,13 +28,13 @@ interface GraphDisplayProps {
 }
 
 const GraphDisplay: React.FC<GraphDisplayProps> = ({ data }) => {
-  console.log(' GraphDisplay received data:', data);
+  console.log('GraphDisplay received data:', data);
 
   // Generate points for the function
   const generatePoints = () => {
     try {
       const { function: fn, domain } = data.data;
-      console.log(' Generating points for function:', {
+      console.log('Generating points for function:', {
         function: fn,
         domain: domain
       });
@@ -43,62 +43,42 @@ const GraphDisplay: React.FC<GraphDisplayProps> = ({ data }) => {
       const points = [];
       const steps = 100;
 
-      console.log('Evaluating function:', fn); // Debug log
-
       for (let i = 0; i <= steps; i++) {
         const x = start + (i / steps) * (end - start);
         try {
           // Use Function constructor to safely evaluate the function
-          const evalFn = new Function('x', `return ${fn}`);
-          const y = evalFn(x);
-          
-          // Skip points that are not finite numbers
-          if (!Number.isFinite(y)) {
-            console.log(' Skipping non-finite point:', { x, y });
-            continue;
+          const fnEval = new Function('x', `return ${fn}`);
+          const y = fnEval(x);
+          if (!isNaN(y) && isFinite(y)) {
+            points.push({ x, y });
           }
-          
-          points.push({ x, y });
         } catch (error) {
-          console.error(' Error evaluating point:', { x, error });
-          continue;
+          console.error('Error evaluating point:', { x, error });
         }
       }
 
-      console.log(' Generated points:', {
-        count: points.length,
-        first: points[0],
-        last: points[points.length - 1]
-      });
       return points;
     } catch (error) {
-      console.error(' Error generating points:', error);
+      console.error('Error generating points:', error);
       return [];
     }
   };
 
   const points = generatePoints();
-
-  // Don't render if no valid points
-  if (points.length === 0) {
-    console.log(' No valid points to display');
-    return (
-      <div className="flex items-center justify-center h-full">
-        <p className="text-gray-500">Unable to display graph</p>
-      </div>
-    );
-  }
+  console.log('Generated points:', points);
 
   const chartData = {
+    labels: points.map(p => p.x.toFixed(1)),
     datasets: [
       {
-        label: 'Function',
-        data: points,
+        label: data.data.function,
+        data: points.map(p => p.y),
         borderColor: 'rgb(75, 192, 192)',
+        backgroundColor: 'rgba(75, 192, 192, 0.5)',
         tension: 0.1,
-        pointRadius: 0
-      }
-    ]
+        pointRadius: 0,
+      },
+    ],
   };
 
   const options = {
@@ -107,28 +87,40 @@ const GraphDisplay: React.FC<GraphDisplayProps> = ({ data }) => {
     scales: {
       x: {
         type: 'linear' as const,
-        position: 'center' as const,
+        display: true,
+        title: {
+          display: true,
+          text: 'x',
+        },
         grid: {
-          color: 'rgba(0, 0, 0, 0.1)'
-        }
+          color: 'rgba(0, 0, 0, 0.1)',
+        },
       },
       y: {
         type: 'linear' as const,
-        position: 'center' as const,
+        display: true,
+        title: {
+          display: true,
+          text: 'y',
+        },
         grid: {
-          color: 'rgba(0, 0, 0, 0.1)'
-        }
-      }
+          color: 'rgba(0, 0, 0, 0.1)',
+        },
+      },
     },
     plugins: {
       legend: {
-        display: false
-      }
-    }
+        position: 'top' as const,
+      },
+      title: {
+        display: true,
+        text: `f(x) = ${data.data.function}`,
+      },
+    },
   };
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-[400px] p-4">
       <Line data={chartData} options={options} />
     </div>
   );
