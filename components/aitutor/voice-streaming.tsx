@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { InputBar } from './input-bar';
+import { MicrophoneIcon } from '@heroicons/react/24/solid';
 
 interface VoiceStreamingProps {
   onTranscript: (text: string) => void;
@@ -109,11 +110,11 @@ export function VoiceStreaming({ onTranscript, isActive, disabled = false }: Voi
         } text-white font-medium`}
       >
         <div className="flex items-center space-x-2">
-          <div className={`w-3 h-3 rounded-full transition-colors duration-200 ${
-            isListening ? 'bg-white animate-pulse' : 'bg-white/80'
+          <MicrophoneIcon className={`w-4 h-4 transition-colors duration-200 ${
+            isListening ? 'text-white animate-pulse' : 'text-white/80'
           }`} />
           <span>
-            {isListening ? 'Listening...' : 'Click to speak'}
+            {isListening ? 'Listening...' : 'Read question'}
           </span>
         </div>
       </Button>
